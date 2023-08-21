@@ -6,6 +6,8 @@ import com.illposed.osc.OSCMessageEvent
 import com.illposed.osc.transport.OSCPortIn
 import com.illposed.osc.transport.OSCPortOut
 import java.net.InetAddress
+import java.util.concurrent.Future
+import java.util.concurrent.FutureTask
 
 class OSCController(ip: String, port: Int, localPort: Int, daemonThread: Boolean = true) {
     private val client = OSCPortOut(InetAddress.getByName(ip), port)
@@ -34,6 +36,19 @@ class OSCController(ip: String, port: Int, localPort: Int, daemonThread: Boolean
 
     fun sendMessage(message: OSCMessage) {
         client.send(message)
+    }
+
+    fun getValue(message: OSCMessage): Float {
+        TODO("Not yet implemented")
+
+        server.dispatcher.addListener(
+            object : MessageSelector {
+                override fun isInfoRequired(): Boolean = false
+                override fun matches(messageEvent: OSCMessageEvent?): Boolean = messageEvent?.message?.address == message.address
+            }
+        ) {
+
+        }
     }
 
 

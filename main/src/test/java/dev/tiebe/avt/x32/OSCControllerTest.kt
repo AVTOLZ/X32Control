@@ -24,4 +24,9 @@ class OSCControllerTest {
 
         assertTrue(received)
     }
+
+    @Test
+    fun testGetValue() {
+
+    }
 }
