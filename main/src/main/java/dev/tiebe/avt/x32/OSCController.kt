@@ -25,6 +25,12 @@ class OSCController(ip: String, port: Int, localPort: Int, daemonThread: Boolean
     fun removeMessageCallback(callback: OSCMessageListener) = registeredCallbacks.remove(callback::acceptMessage)
 
     fun sendMessage(message: OSCMessage) {
+        message.arguments.forEachIndexed { index, argument ->
+            if (argument is String) {
+                //padded to multiple of 4 characters with \0
+                message.arguments[index] = argument + "\u0000".repeat(4 - (argument.length % 4))
+            }
+        }
         client.send(message)
     }
 

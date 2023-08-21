@@ -16,6 +16,10 @@ dependencies {
     testImplementation(platform("org.junit:junit-bom:5.9.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     implementation(kotlin("stdlib-jdk8"))
+
+    @Suppress("VulnerableLibrariesLocal", "RedundantSuppression") // no other options, safety is not a priority
+    implementation("com.illposed.osc:javaosc-core:0.8")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
 }
 
 tasks.test {
