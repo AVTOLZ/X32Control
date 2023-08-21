@@ -7,13 +7,11 @@ import com.illposed.osc.OSCMessageListener
 import com.illposed.osc.transport.OSCPortIn
 import com.illposed.osc.transport.OSCPortOut
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import java.net.InetAddress
-import java.util.concurrent.Future
-import java.util.concurrent.FutureTask
 
+@Suppress("MemberVisibilityCanBePrivate", "unused") //Public API, so don't need IDE warnings.
 class OSCController(ip: String, port: Int, localPort: Int, daemonThread: Boolean = true) {
     private val client = OSCPortOut(InetAddress.getByName(ip), port)
     private val server = OSCPortIn(localPort).apply { isDaemonListener = daemonThread }
