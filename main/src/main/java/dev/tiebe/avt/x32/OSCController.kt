@@ -9,6 +9,8 @@ import com.illposed.osc.transport.OSCPortOut
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.withTimeoutOrNull
 import java.net.InetAddress
 
 @Suppress("MemberVisibilityCanBePrivate", "unused") //Public API, so don't need IDE warnings.
@@ -27,7 +29,7 @@ class OSCController(ip: String, port: Int, localPort: Int, daemonThread: Boolean
         client.send(message)
     }
 
-    suspend fun getValue(message: OSCMessage): OSCMessage {
+    suspend fun getValue(message: OSCMessage): OSCMessage? {
         val channel = Channel<OSCMessage>()
 
         val listener = OSCMessageListener {
@@ -43,12 +45,15 @@ class OSCController(ip: String, port: Int, localPort: Int, daemonThread: Boolean
         addMessageCallback(listener)
 
         client.send(message)
-        val result = channel.receive()
 
-        removeMessageCallback(listener)
-        channel.close()
+        return withTimeoutOrNull(2000) {
+            val result = channel.receive()
 
-        return result
+            removeMessageCallback(listener)
+            channel.close()
+
+            return@withTimeoutOrNull result
+        }
     }
 
 
@@ -60,7 +65,7 @@ class OSCController(ip: String, port: Int, localPort: Int, daemonThread: Boolean
                 override fun matches(messageEvent: OSCMessageEvent?): Boolean = true
             }
         ) { message ->
-            registeredCallbacks.forEach { it(message) }
+            registeredCallbacks.iterator().forEach { it(message) }
         }
 
         server.startListening()

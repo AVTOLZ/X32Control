@@ -16,6 +16,15 @@ allprojects {
     }
 }
 
+plugins {
+    id("org.jetbrains.kotlinx.kover") version "0.7.3"
+}
+
+dependencies {
+    kover(project(":main"))
+    kover(project(":cli"))
+}
+
 tasks.register("clean", Delete::class) {
     delete(rootProject.buildDir)
 }

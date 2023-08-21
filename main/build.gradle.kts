@@ -1,6 +1,6 @@
 plugins {
-    id("java")
     kotlin("jvm")
+    id("org.jetbrains.kotlinx.kover") version "0.7.3"
 }
 
 group = "dev.tiebe.avt.x32"
