@@ -1,7 +1,5 @@
-package dev.tiebe.avt.x32;
+package dev.tiebe.avt.x32
 
-public class Main {
-    public static void main(String[] args) {
-        System.out.println("Hello world!");
-    }
+fun main() {
+    println("Hello world!")
 }

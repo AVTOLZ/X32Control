@@ -4,6 +4,8 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/X32Control.iml" filepath="$PROJECT_DIR$/X32Control.iml" />
       <module fileurl="file://$PROJECT_DIR$/main.iml" filepath="$PROJECT_DIR$/main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/main.main.iml" filepath="$PROJECT_DIR$/.idea/modules/main.main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/modules/main.test.iml" filepath="$PROJECT_DIR$/.idea/modules/main.test.iml" />
     </modules>
   </component>
 </project>
