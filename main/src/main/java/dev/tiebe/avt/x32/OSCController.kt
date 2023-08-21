@@ -3,14 +3,13 @@ package dev.tiebe.avt.x32
 import com.illposed.osc.MessageSelector
 import com.illposed.osc.OSCMessage
 import com.illposed.osc.OSCMessageEvent
-import com.illposed.osc.OSCMessageListener
 import com.illposed.osc.transport.OSCPortIn
 import com.illposed.osc.transport.OSCPortOut
 import java.net.InetAddress
 
-class OSCController(ip: String, port: Int, localPort: Int) {
+class OSCController(ip: String, port: Int, localPort: Int, daemonThread: Boolean = true) {
     private val client = OSCPortOut(InetAddress.getByName(ip), port)
-    private val server = OSCPortIn(localPort)
+    private val server = OSCPortIn(localPort).apply { isDaemonListener = daemonThread }
 
     private val registeredCallbacks = mutableListOf<(OSCMessageEvent) -> Unit>()
 

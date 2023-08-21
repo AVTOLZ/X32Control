@@ -1,5 +1,4 @@
 plugins {
-    id("java")
     kotlin("jvm")
 }
 
@@ -11,13 +10,11 @@ repositories {
 }
 
 dependencies {
+    implementation(project(":main"))
+
     testImplementation(platform("org.junit:junit-bom:5.9.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")
-    @Suppress("VulnerableLibrariesLocal", "RedundantSuppression")
-    implementation("com.illposed.osc:javaosc-core:0.8")
     implementation(kotlin("stdlib-jdk8"))
-    testImplementation("org.junit.jupiter:junit-jupiter:5.8.1")
-
 }
 
 tasks.test {
