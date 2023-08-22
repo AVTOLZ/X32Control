@@ -1,4 +1,4 @@
-package dev.tiebe.avt.x32.api.fader.aux
+package dev.tiebe.avt.x32.api.fader.auxin
 
 import dev.tiebe.avt.x32.OSCController
 import dev.tiebe.avt.x32.api.fader.Fader

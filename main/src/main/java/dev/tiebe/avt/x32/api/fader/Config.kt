@@ -1,7 +1,7 @@
 package dev.tiebe.avt.x32.api.fader
 
 import com.illposed.osc.OSCMessage
-import dev.tiebe.avt.x32.api.fader.aux.AuxIn
+import dev.tiebe.avt.x32.api.fader.auxin.AuxIn
 import dev.tiebe.avt.x32.api.fader.bus.Bus
 import dev.tiebe.avt.x32.api.fader.channel.Channel
 import dev.tiebe.avt.x32.api.fader.dca.DCA
