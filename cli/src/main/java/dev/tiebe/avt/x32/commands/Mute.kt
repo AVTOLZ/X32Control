@@ -8,17 +8,17 @@ class Mute(private val osc: OSCController): Command {
 
     override var arguments: List<Any> = listOf()
     override fun setArguments(args: List<String>): Mute? {
-        try {
-            args[0].toInt()
-            args[1].toBooleanStrict()
-        } catch (exception: NumberFormatException) {
-            println("Channel number not valid.")
+        if(args.size != 3) {
             return null
-        }  catch (exception: IllegalArgumentException) {
-            println("Boolean argument not valid")
+        } else {
+            val arg1 = args[1].toIntOrNull()
+            val arg2 = args[2].toBooleanStrictOrNull()
+
+            if (arg1 == null || arg2 == null) return null
+
+            arguments = listOf(arg1, arg2)
+            return this
         }
-        arguments = args
-        return this
     }
 
     override fun run() {
