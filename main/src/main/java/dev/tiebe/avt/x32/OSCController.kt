@@ -25,8 +25,7 @@ class OSCController(ip: String, port: Int, localPort: Int, daemonThread: Boolean
     fun removeMessageCallback(callback: OSCMessageListener) = registeredCallbacks.remove(callback::acceptMessage)
 
     fun connect() {
-        client.connect()
-        server.connect()
+        server.startListening()
     }
 
     fun sendMessage(message: OSCMessage) {

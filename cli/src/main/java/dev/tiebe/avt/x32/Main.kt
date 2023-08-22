@@ -20,6 +20,7 @@ fun main() {
     // TODO Busses, Matrices, DCAs, masters
     while (true) {
         try {
+            print(" > ")
             var command = readlnOrNull()?.split(",")
             while (command == null) {
                 command = readlnOrNull()?.split(",")
