@@ -2,6 +2,7 @@ package dev.tiebe.avt.x32.commands
 
 import dev.tiebe.avt.x32.Commands
 import dev.tiebe.avt.x32.OSCController
+import dev.tiebe.avt.x32.api.getStatus
 
 class Lock(private val osc: OSCController): Command {
 
@@ -11,6 +12,6 @@ class Lock(private val osc: OSCController): Command {
     }
 
     override fun run() {
-        Commands(osc).lock()
+        osc.getStatus().setLock(true)
     }
 }

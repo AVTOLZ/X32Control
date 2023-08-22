@@ -10,6 +10,8 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 import java.net.InetAddress
 import java.net.InetSocketAddress
+import java.util.UUID
+import java.util.concurrent.CopyOnWriteArrayList
 
 @Suppress("MemberVisibilityCanBePrivate", "unused") //Public API, so don't need IDE warnings.
 class OSCController(ip: String, port: Int, localPort: Int, daemonThread: Boolean = true) {
@@ -17,7 +19,7 @@ class OSCController(ip: String, port: Int, localPort: Int, daemonThread: Boolean
     private val client = OSCPortOut(OSCSerializerAndParserBuilder(), remote, InetSocketAddress(OSCPort.generateWildcard(remote), localPort))
     private val server = OSCPortIn(localPort).apply { isDaemonListener = daemonThread }
 
-    private val registeredCallbacks = mutableListOf<(OSCMessageEvent) -> Unit>()
+    private val registeredCallbacks = CopyOnWriteArrayList<(OSCMessageEvent) -> Unit>()
 
     fun addMessageCallback(callback: (OSCMessageEvent) -> Unit) = registeredCallbacks.add(callback)
     fun addMessageCallback(callback: OSCMessageListener) = registeredCallbacks.add(callback::acceptMessage)
@@ -27,6 +29,49 @@ class OSCController(ip: String, port: Int, localPort: Int, daemonThread: Boolean
     fun connect() {
         server.startListening()
     }
+
+    val subscriptionThreads = mutableMapOf<UUID, Pair<Thread, (OSCMessageEvent) -> Unit>>()
+
+    fun subscribe(address: String, onReceive: (it: OSCMessageEvent) -> Unit): UUID {
+        val messageCallback = { it: OSCMessageEvent ->
+            println(it.message.address)
+            if (it.message.address == address) {
+                onReceive(it)
+            }
+        }
+
+        val message = OSCMessage("/subscribe", listOf(address, 0))
+        client.send(message)
+
+        val thread = Thread {
+            while (true) {
+                if (Thread.interrupted()) {
+                    println("INTERRUPTED")
+                    client.send(OSCMessage("/unsubscribe", listOf(address)))
+                    return@Thread
+                }
+                Thread.sleep(5000)
+
+                client.send(OSCMessage("/renew", listOf(address)))
+            }
+        }
+
+        thread.start()
+        addMessageCallback(messageCallback)
+
+
+        val uuid = UUID.randomUUID()
+        subscriptionThreads[uuid] = thread to messageCallback
+
+        return uuid
+    }
+
+    fun unsubscribe(uuid: UUID) {
+        subscriptionThreads[uuid]?.first?.interrupt()
+        removeMessageCallback(subscriptionThreads[uuid]?.second ?: return)
+        subscriptionThreads.remove(uuid)
+    }
+
 
     fun sendMessage(message: OSCMessage) {
         val maxMessageSize = 512  // Replace with the buffer's actual size
@@ -77,13 +122,18 @@ class OSCController(ip: String, port: Int, localPort: Int, daemonThread: Boolean
 
 
     init {
+        server.dispatcher.addBadDataListener {
+            println("Bad data received")
+            println(it.data)
+        }
+
         server.dispatcher.addListener(
             object : MessageSelector {
                 override fun isInfoRequired(): Boolean = false
                 override fun matches(messageEvent: OSCMessageEvent?): Boolean = true
             }
         ) { message ->
-            println(message)
+            println(message.message.address)
             registeredCallbacks.iterator().forEach { it(message) }
         }
 

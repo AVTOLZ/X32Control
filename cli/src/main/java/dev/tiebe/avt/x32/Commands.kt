@@ -8,26 +8,6 @@ import dev.tiebe.avt.x32.commands.FakeLock
 
 class Commands(private val osc: OSCController) {
 
-    fun lock() {
-        osc.getStatus().setLock(true)
-    }
-    fun unlock() {
-        FakeLock.animationThreadRunning = false
-
-        osc.getStatus().setLock(false)
-    }
-
-    fun mute(channel: Int) {
-    }
-    fun unmute(channel: Int) {
-        osc.getChannel(channel).mix.setMute(false)
-    }
-    fun fader(channel: Int, level: Float) {
-        osc.getChannel(channel).mix.setLevel(level)
-    }
-    fun solo(channel: Int, bool: Boolean) {
-        osc.getChannel(channel).config.setSolo(bool)
-    }
     fun color(channel: Int, colorString: String) {
         val color = Color.valueOf(colorString.uppercase())
         osc.getChannel(channel).config.setColor(color)

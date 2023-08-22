@@ -2,6 +2,7 @@ package dev.tiebe.avt.x32.commands
 
 import dev.tiebe.avt.x32.Commands
 import dev.tiebe.avt.x32.OSCController
+import dev.tiebe.avt.x32.api.getStatus
 
 class Unlock(private val osc: OSCController): Command {
 
@@ -12,6 +13,7 @@ class Unlock(private val osc: OSCController): Command {
 
     override fun run() {
         FakeLock.animationThreadRunning = false
-        Commands(osc).unlock()
+
+        osc.getStatus().setLock(false)
     }
 }

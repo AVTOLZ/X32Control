@@ -1,13 +1,20 @@
 package dev.tiebe.avt.x32
 
+import com.illposed.osc.OSCMessage
 import dev.tiebe.avt.x32.api.fader.channel.Channel
 import dev.tiebe.avt.x32.commands.*
 
 // User variables
-val IP = "192.168.0.20"
+val IP = "192.168.122.209"
 
-fun main() {
-    val osc = OSCController(IP, 10023, 10024)
+fun main(args: Array<String>) {
+    var localPort = 10024
+    if (args.isNotEmpty() && args[0].toIntOrNull() != null) {
+        println("Using port ${args[0]}")
+        localPort = args[0].toInt()
+    }
+
+    val osc = OSCController(IP, 10023, localPort)
     osc.connect()
 
     val channels = mutableListOf<Channel>()
@@ -34,6 +41,7 @@ fun main() {
                 "fader" -> Fader(osc).setArguments(command)?.run() ?: println("Arg 1: Channel\nArg2: Fader level")
                 "faderpre" -> FaderPreset(osc).setArguments(command)?.run() ?: println("Arg 1: Preset")
                 "solo" -> Solo(osc).setArguments(command)?.run() ?: println("Arg 1: Channel\nArg 2: Boolean")
+                "blocklock" -> BlockLock(osc).setArguments(command)?.run() ?: println("Arg 1: Boolean")
 
                 "color" -> try {
                     commands.color(command[1].toInt(), command[2])
@@ -41,6 +49,7 @@ fun main() {
                     println("This command requires two parameters: the channel and the color. Example: color,1,red")
                 }
 
+                "custom" -> osc.sendMessage(OSCMessage(command[1]))
                 else -> println("Command not found")
             }
 

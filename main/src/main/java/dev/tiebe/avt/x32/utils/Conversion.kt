@@ -11,3 +11,15 @@ fun Float.dbToFloat() = if (this < -60) (this + 90f) / 480f
     else if (this < -10) (this + 50f) / 80f
     else if (this <= 10) (this + 30f) / 40f
     else throw IllegalStateException("Cannot convert db value to float, value is too high")
+
+
+fun List<String>.toCorrectTypes(): List<Any> {
+    return this.map {
+        when {
+            it.toBooleanStrictOrNull() != null -> it.toBooleanStrict()
+            it.toFloatOrNull() != null -> it.toFloat()
+            it.toIntOrNull() != null -> it.toInt()
+            else -> it
+        }
+    }
+}
