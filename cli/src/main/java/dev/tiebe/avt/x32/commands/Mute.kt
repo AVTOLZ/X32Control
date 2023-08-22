@@ -1,6 +1,5 @@
 package dev.tiebe.avt.x32.commands
 
-import dev.tiebe.avt.x32.Commands
 import dev.tiebe.avt.x32.OSCController
 import dev.tiebe.avt.x32.api.getChannel
 

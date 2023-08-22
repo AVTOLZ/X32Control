@@ -30,8 +30,6 @@ fun main(args: Array<String>) {
                 command = readlnOrNull()?.split(",")
             }
 
-            val commands = Commands(osc)
-
             when (command[0]) {
                 "fakelock" -> FakeLock(osc).setArguments(command).run()
                 "lock" -> Lock(osc).setArguments(command).run()
@@ -42,12 +40,7 @@ fun main(args: Array<String>) {
                 "faderpre" -> FaderPreset(osc).setArguments(command)?.run() ?: println("Arg 1: Preset")
                 "solo" -> Solo(osc).setArguments(command)?.run() ?: println("Arg 1: Channel\nArg 2: Boolean")
                 "blocklock" -> BlockLock(osc).setArguments(command)?.run() ?: println("Arg 1: Boolean")
-
-                "color" -> try {
-                    commands.color(command[1].toInt(), command[2])
-                } catch (exception: IndexOutOfBoundsException) {
-                    println("This command requires two parameters: the channel and the color. Example: color,1,red")
-                }
+                "color" -> Color(osc).setArguments(command)?.run() ?: println("Arg 1: Channel\nArg 2: Color")
 
                 "custom" -> osc.sendMessage(OSCMessage(command[1]))
                 else -> println("Command not found")
