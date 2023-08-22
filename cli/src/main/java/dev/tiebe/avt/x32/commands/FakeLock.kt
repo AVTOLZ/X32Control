@@ -55,7 +55,7 @@ class FakeLock(private val osc: OSCController): Command {
 
         runBlocking {
             osc.getStatus().setLock(true)
-            osc.getStatus().setScreen(Screen.HOME)  //TODO: osc.getStatus().getScreen())
+            osc.getStatus().setScreen(osc.getStatus().getScreen())
         }
     }
 

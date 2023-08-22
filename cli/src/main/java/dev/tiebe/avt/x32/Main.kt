@@ -11,34 +11,43 @@ val IP = "192.168.0.20"
 
 fun main() {
     val osc = OSCController(IP, 10023, 10024)
+    osc.connect()
 
     val channels = mutableListOf<Channel>()
     for(i in 1..32) {
         channels.add(Channel(osc, i))
     }
     // TODO Busses, Matrices, DCAs, masters
-    while(true) {
-        var command = readlnOrNull()?.split(",")
-        while(command == null) {
-            command = readlnOrNull()?.split(",")
+    while (true) {
+        try {
+            var command = readlnOrNull()?.split(",")
+            while (command == null) {
+                command = readlnOrNull()?.split(",")
+            }
+
+            val commands = Commands(osc)
+
+            when (command[0]) {
+                "fakelock" -> FakeLock(osc).setArguments(command).run()
+                "lock" -> Lock(osc).setArguments(command).run()
+                "unlock" -> Unlock(osc).setArguments(command).run()
+                "mute" -> Mute(osc).setArguments(command)?.run() ?: println("Arg 1: Channel\nArg 2: Boolean")
+                "speed" -> FakeLock.speed = command[1].toDoubleOrNull() ?: 1.0
+                "fader" -> Fader(osc).setArguments(command)?.run() ?: println("Arg 1: Channel\nArg2: Fader level")
+                "faderpre" -> FaderPreset(osc).setArguments(command)?.run() ?: println("Arg 1: Preset")
+                "solo" -> Solo(osc).setArguments(command)?.run() ?: println("Arg 1: Channel\nArg 2: Boolean")
+
+                "color" -> try {
+                    commands.color(command[1].toInt(), command[2])
+                } catch (exception: IndexOutOfBoundsException) {
+                    println("This command requires two parameters: the channel and the color. Example: color,1,red")
+                }
+
+                else -> println("Command not found")
+            }
+
+        } catch (e: Exception) {
+            println("Error: ${e.message}")
         }
-
-        val commands = Commands(osc)
-
-        when(command[0]) {
-            "fakelock"      -> FakeLock(osc).setArguments(command).run()
-            "lock"          -> Lock(osc).setArguments(command).run()
-            "unlock"        -> Unlock(osc).setArguments(command).run()
-            "mute"          -> Mute(osc).setArguments(command)?.run() ?: println("Arg 1: Channel\nArg 2: Boolean")
-            "speed"         -> FakeLock.speed = command[1].toDoubleOrNull() ?: 1.0
-            "fader"         -> Fader(osc).setArguments(command)?.run() ?: println("Arg 1: Channel\nArg2: Fader level")
-            "faderpre"      -> FaderPreset(osc).setArguments(command)?.run() ?: println("Arg 1: Preset")
-            "solo"          -> Solo(osc).setArguments(command)?.run() ?: println("Arg 1: Channel\nArg 2: Boolean")
-
-            "color"         -> try { commands.color(command[1].toInt(), command[2]) } catch(exception: IndexOutOfBoundsException) {println("This command requires two parameters: the channel and the color. Example: color,1,red")}
-            "solo"          -> try { commands.solo(command[1].toInt(), command[2].toBooleanStrict()) } catch(exception: IndexOutOfBoundsException) {println("This command requires two parameters: the channel and the new state. Example: solo,1,true")}
-            else            -> println("Command not found")
-        }
-
     }
 }

@@ -24,6 +24,11 @@ class OSCController(ip: String, port: Int, localPort: Int, daemonThread: Boolean
     fun removeMessageCallback(callback: (OSCMessageEvent) -> Unit) = registeredCallbacks.remove(callback)
     fun removeMessageCallback(callback: OSCMessageListener) = registeredCallbacks.remove(callback::acceptMessage)
 
+    fun connect() {
+        client.connect()
+        server.connect()
+    }
+
     fun sendMessage(message: OSCMessage) {
         val maxMessageSize = 512  // Replace with the buffer's actual size
         var totalMessageSize = 0
