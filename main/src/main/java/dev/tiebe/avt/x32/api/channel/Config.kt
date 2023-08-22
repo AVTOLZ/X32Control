@@ -29,6 +29,6 @@ class Config(channel: Channel) {
     }
 
     fun setSolo(state: Boolean) {
-        osc.sendMessage(OSCMessage("/-stat/solosw/$idString", listOf(if (state) "OFF" else "ON"))) //TODO: check of dit klopt
+        osc.sendMessage(OSCMessage("/-stat/solosw/$idString", listOf(if (state) 1 else 0)))
     }
 }

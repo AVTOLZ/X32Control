@@ -11,6 +11,7 @@ class Unlock(private val osc: OSCController): Command {
     }
 
     override fun run() {
+        FakeLock.animationThreadRunning = false
         Commands(osc).unlock()
     }
 }

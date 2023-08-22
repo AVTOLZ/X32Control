@@ -1,9 +1,7 @@
 package dev.tiebe.avt.x32
 
-import com.illposed.osc.MessageSelector
-import com.illposed.osc.OSCMessage
-import com.illposed.osc.OSCMessageEvent
-import com.illposed.osc.OSCMessageListener
+import com.illposed.osc.*
+import com.illposed.osc.transport.OSCPort
 import com.illposed.osc.transport.OSCPortIn
 import com.illposed.osc.transport.OSCPortOut
 import kotlinx.coroutines.channels.Channel
@@ -11,10 +9,12 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 import java.net.InetAddress
+import java.net.InetSocketAddress
 
 @Suppress("MemberVisibilityCanBePrivate", "unused") //Public API, so don't need IDE warnings.
 class OSCController(ip: String, port: Int, localPort: Int, daemonThread: Boolean = true) {
-    private val client = OSCPortOut(InetAddress.getByName(ip), port)
+    val remote = InetSocketAddress(InetAddress.getByName(ip), port)
+    private val client = OSCPortOut(OSCSerializerAndParserBuilder(), remote, InetSocketAddress(OSCPort.generateWildcard(remote), localPort))
     private val server = OSCPortIn(localPort).apply { isDaemonListener = daemonThread }
 
     private val registeredCallbacks = mutableListOf<(OSCMessageEvent) -> Unit>()
@@ -25,12 +25,21 @@ class OSCController(ip: String, port: Int, localPort: Int, daemonThread: Boolean
     fun removeMessageCallback(callback: OSCMessageListener) = registeredCallbacks.remove(callback::acceptMessage)
 
     fun sendMessage(message: OSCMessage) {
+        val maxMessageSize = 512  // Replace with the buffer's actual size
+        var totalMessageSize = 0
+
         message.arguments.forEachIndexed { index, argument ->
             if (argument is String) {
-                //padded to multiple of 4 characters with \0
-                message.arguments[index] = argument + "\u0000".repeat(4 - (argument.length % 4))
+                if (totalMessageSize + argument.length > maxMessageSize) {
+                    throw IllegalArgumentException("The message size limit of $maxMessageSize has been exceeded")
+                }
+
+                val paddedArgument = argument + "\u0000".repeat(4 - (argument.length % 4))
+                totalMessageSize += paddedArgument.length
+                message.arguments[index] = paddedArgument
             }
         }
+
         client.send(message)
     }
 
@@ -70,6 +79,7 @@ class OSCController(ip: String, port: Int, localPort: Int, daemonThread: Boolean
                 override fun matches(messageEvent: OSCMessageEvent?): Boolean = true
             }
         ) { message ->
+            println(message)
             registeredCallbacks.iterator().forEach { it(message) }
         }
 

@@ -1,13 +1,17 @@
 package dev.tiebe.avt.x32
 
 import dev.tiebe.avt.x32.api.channel.Channel
+import dev.tiebe.avt.x32.api.getChannel
+import dev.tiebe.avt.x32.api.getStatus
 import dev.tiebe.avt.x32.commands.*
+import kotlinx.coroutines.runBlocking
 
 // User variables
 val IP = "192.168.0.20"
 
 fun main() {
     val osc = OSCController(IP, 10023, 10024)
+
     val channels = mutableListOf<Channel>()
     for(i in 1..32) {
         channels.add(Channel(osc, i))
@@ -22,20 +26,15 @@ fun main() {
         val commands = Commands(osc)
 
         when(command[0]) {
-            "fakelock"      -> FakeLock(osc).setArguments(command)?.run()
-            "lock"          -> Lock(osc).setArguments(command)?.run()
-            "unlock"        -> Unlock(osc).setArguments(command)?.run()
-
+            "fakelock"      -> FakeLock(osc).setArguments(command).run()
+            "lock"          -> Lock(osc).setArguments(command).run()
+            "unlock"        -> Unlock(osc).setArguments(command).run()
             "mute"          -> Mute(osc).setArguments(command)?.run() ?: println("Arg 1: Channel\nArg 2: Boolean")
+            "speed"         -> FakeLock.speed = command[1].toDoubleOrNull() ?: 1.0
+            "fader"         -> Fader(osc).setArguments(command)?.run() ?: println("Arg 1: Channel\nArg2: Fader level")
+            "faderpre"      -> FaderPreset(osc).setArguments(command)?.run() ?: println("Arg 1: Preset")
+            "solo"          -> Solo(osc).setArguments(command)?.run() ?: println("Arg 1: Channel\nArg 2: Boolean")
 
-
-            // One parameter
-            "mute"          -> try { commands.mute(command[1].toInt()) } catch(exception: IndexOutOfBoundsException) {println("This command requires a parameter: the channel. Example: mute,1")}
-            "unmute"        -> try { commands.unmute(command[1].toInt()) } catch(exception: IndexOutOfBoundsException) {println("This command requires a parameter: the channel. Example: unmute,1")}
-            "speed"          -> try { FakeLock.speed = command[1].toDouble(); } catch(exception: IndexOutOfBoundsException) {println("This command requires one parameter: the speed. Example: speed,2.0")}
-
-            // Two parameters
-            "fader"         -> try { commands.fader(command[1].toInt(), command[2].toFloat()) } catch(exception: IndexOutOfBoundsException) {println("This command requires two parameters: the channel and the level of the fader. Example: fader,1,0.5")}
             "color"         -> try { commands.color(command[1].toInt(), command[2]) } catch(exception: IndexOutOfBoundsException) {println("This command requires two parameters: the channel and the color. Example: color,1,red")}
             "solo"          -> try { commands.solo(command[1].toInt(), command[2].toBooleanStrict()) } catch(exception: IndexOutOfBoundsException) {println("This command requires two parameters: the channel and the new state. Example: solo,1,true")}
             else            -> println("Command not found")
