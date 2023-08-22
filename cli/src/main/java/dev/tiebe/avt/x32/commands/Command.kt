@@ -1,7 +1,7 @@
 package dev.tiebe.avt.x32.commands
 
 interface Command {
-    var arguments: List<String>
+    var arguments: List<Any>
 
     fun setArguments(args: List<String>): Command?
 

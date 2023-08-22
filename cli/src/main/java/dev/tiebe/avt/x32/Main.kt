@@ -1,9 +1,9 @@
 package dev.tiebe.avt.x32
 
 import dev.tiebe.avt.x32.api.channel.Channel
-import dev.tiebe.avt.x32.commands.FakeLock
+import dev.tiebe.avt.x32.commands.*
 
-//gewoon hier neergooien, of wil je liever in apart bestand?; trouwens nvm, is prima zo
+// User variables
 val IP = "192.168.0.20"
 
 fun main() {
@@ -22,10 +22,12 @@ fun main() {
         val commands = Commands(osc)
 
         when(command[0]) {
-            // No parameters
-            "lock"          -> commands.lock()
-            "unlock"        -> commands.unlock()
-            "fakelock"      -> FakeLock(osc).setArguments(command)?.run() ?: println("fghfdgj")
+            "fakelock"      -> FakeLock(osc).setArguments(command)?.run()
+            "lock"          -> Lock(osc).setArguments(command)?.run()
+            "unlock"        -> Unlock(osc).setArguments(command)?.run()
+
+            "mute"          -> Mute(osc).setArguments(command)?.run() ?: println("Arg 1: Channel\nArg 2: Boolean")
+
 
             // One parameter
             "mute"          -> try { commands.mute(command[1].toInt()) } catch(exception: IndexOutOfBoundsException) {println("This command requires a parameter: the channel. Example: mute,1")}

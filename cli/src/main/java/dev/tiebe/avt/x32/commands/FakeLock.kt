@@ -15,7 +15,7 @@ class FakeLock(private val osc: OSCController): Command {
         private lateinit var animationThread: Thread
     }
 
-    override var arguments: List<String> = listOf()
+    override var arguments: List<Any> = listOf()
 
     override fun setArguments(args: List<String>): Command {
         return this

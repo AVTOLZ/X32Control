@@ -20,7 +20,6 @@ class Commands(private val osc: OSCController) {
     }
 
     fun mute(channel: Int) {
-        osc.getChannel(channel).mix.setMute(true)
     }
     fun unmute(channel: Int) {
         osc.getChannel(channel).mix.setMute(false)
