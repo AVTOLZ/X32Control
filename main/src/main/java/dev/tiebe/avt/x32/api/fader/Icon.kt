@@ -1,6 +1,6 @@
 @file:Suppress("unused")
 
-package dev.tiebe.avt.x32.api.channel
+package dev.tiebe.avt.x32.api.fader
 
 /*
 Regex: (\d+?(?= )) (.+)

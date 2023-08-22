@@ -51,7 +51,7 @@ class OSCController(ip: String, port: Int, localPort: Int, daemonThread: Boolean
         val channel = Channel<OSCMessage>()
 
         val listener = OSCMessageListener {
-            if (it.message.address == message.address) {
+            if (it.message.address.startsWith(message.address)) {
                 runBlocking {
                     launch {
                         channel.send(it.message)

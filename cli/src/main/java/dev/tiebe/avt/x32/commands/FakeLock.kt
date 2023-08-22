@@ -1,8 +1,9 @@
 package dev.tiebe.avt.x32.commands
 
 import dev.tiebe.avt.x32.OSCController
-import dev.tiebe.avt.x32.api.channel.Color
+import dev.tiebe.avt.x32.api.fader.Color
 import dev.tiebe.avt.x32.api.getChannel
+import dev.tiebe.avt.x32.api.getBus
 import dev.tiebe.avt.x32.api.getStatus
 import dev.tiebe.avt.x32.api.internal.Screen
 import kotlinx.coroutines.runBlocking
@@ -23,25 +24,37 @@ class FakeLock(private val osc: OSCController): Command {
 
     override fun run() {
         animationThread = Thread {
+            val channels = List(16) { osc.getChannel(it + 1) }
+            val dcaBusses = List(8) { osc.getBus(it + 1) }
+
+            val faders = channels + dcaBusses
+
             animationThreadRunning = true
             var index = 0
             val cols = listOf(Color.RED, Color.YELLOW, Color.GREEN, Color.CYAN, Color.BLUE, Color.MAGENTA)
 
-            for(i in 1..16) {
-                osc.getChannel(i).config.setColor(Color.WHITE)
-                if (i != 1)
-                    osc.getChannel(i - 1).config.setColor(Color.OFF)
+            for (fader in faders.indices) {
+                faders[fader].config.setColor(Color.WHITE)
+                faders[fader].config.setSolo(true)
+                faders[fader].mix.setMute(true)
+                if (fader != 0) {
+                    faders[fader-1].config.setColor(Color.OFF)
+                    faders[fader-1].config.setSolo(false)
+                    faders[fader-1].mix.setMute(false)
+                }
                 Thread.sleep((250/speed).toLong())
             }
 
-            osc.getChannel(16).config.setColor(Color.OFF)
+            faders.last().config.setColor(Color.OFF)
+            faders.last().config.setSolo(false)
+            faders.last().mix.setMute(false)
 
             Thread.sleep((2000/speed).toLong())
 
 
             while (animationThreadRunning) {
-                for (i in 1..16) {
-                    osc.getChannel(i).config.setColor(cols[index])
+                for (fader in faders) {
+                    fader.config.setColor(cols[index])
                     Thread.sleep(((1000/64)/speed).toLong())
                 }
 
@@ -55,7 +68,9 @@ class FakeLock(private val osc: OSCController): Command {
 
         runBlocking {
             osc.getStatus().setLock(true)
-            osc.getStatus().setScreen(osc.getStatus().getScreen())
+            val currentScreen = osc.getStatus().getScreen()
+
+            osc.getStatus().setScreen(if (currentScreen == Screen.LOCK) Screen.HOME else currentScreen)
         }
     }
 

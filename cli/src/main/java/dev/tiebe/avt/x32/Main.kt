@@ -1,6 +1,6 @@
 package dev.tiebe.avt.x32
 
-import dev.tiebe.avt.x32.api.channel.Channel
+import dev.tiebe.avt.x32.api.fader.channel.Channel
 import dev.tiebe.avt.x32.api.getChannel
 import dev.tiebe.avt.x32.api.getStatus
 import dev.tiebe.avt.x32.commands.*

@@ -1,4 +1,4 @@
-package dev.tiebe.avt.x32.api.channel
+package dev.tiebe.avt.x32.api.fader
 
 enum class Color(val value: Int) {
     OFF(0),

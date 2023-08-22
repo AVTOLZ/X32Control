@@ -1,11 +1,9 @@
 package dev.tiebe.avt.x32
 
-import dev.tiebe.avt.x32.api.channel.Color
+import dev.tiebe.avt.x32.api.fader.Color
 import dev.tiebe.avt.x32.api.getChannel
 import dev.tiebe.avt.x32.api.getStatus
-import dev.tiebe.avt.x32.api.internal.Screen
 import dev.tiebe.avt.x32.commands.FakeLock
-import kotlinx.coroutines.runBlocking
 
 
 class Commands(private val osc: OSCController) {
