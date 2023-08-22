@@ -9,6 +9,6 @@ class Bus(oscController: OSCController, id: Int): Fader(oscController, id) {
 
     init {
         if (id < 1 || id > 16)
-            throw IllegalArgumentException("Channel number must be between 1 and 32")
+            throw IllegalArgumentException("Bus number must be between 1 and 16")
     }
 }

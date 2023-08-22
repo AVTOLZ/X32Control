@@ -4,8 +4,10 @@ package dev.tiebe.avt.x32.api.fader
 
 import dev.tiebe.avt.x32.OSCController
 
-abstract class Fader(val oscController: OSCController, val id: Int) {
-    private val idString = id.toString().padStart(2, '0')
+abstract class Fader(val oscController: OSCController, val id: String) {
+    constructor(oscController: OSCController, id: Int): this(oscController, id.toString())
+
+    private val idString = id.padStart(2, '0')
     abstract val classString: String
 
     private lateinit var config_: Config
@@ -43,9 +45,4 @@ abstract class Fader(val oscController: OSCController, val id: Int) {
                 mix_
             }
         }
-
-    init {
-        if (id < 1 || id > 32)
-            throw IllegalArgumentException("Channel number must be between 1 and 32")
-    }
 }
