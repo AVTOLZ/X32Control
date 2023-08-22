@@ -48,7 +48,7 @@ fun main() {
             }
 
         } catch (e: Exception) {
-            println("Error: ${e.message}")
+            e.printStackTrace()
         }
     }
 }

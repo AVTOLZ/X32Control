@@ -39,13 +39,13 @@ class Config(val fader: Fader) {
     fun setSolo(state: Boolean) {
         val offsetId = when (fader) {
             is Channel -> fader.id.padStart(2, '0')
-            is AuxIn -> (fader.id + 32).padStart(2, '0')
-            is FtxRn -> (fader.id + 40).padStart(2, '0')
-            is Bus -> (fader.id + 48).padStart(2, '0')
-            is Matrix -> (fader.id + 64).padStart(2, '0')
+            is AuxIn -> (fader.id + 32)
+            is FtxRn -> (fader.id + 40)
+            is Bus -> (fader.id + 48)
+            is Matrix -> (fader.id + 64)
             is LR -> "71"
             is Mono -> "72"
-            is DCA -> (fader.id + 72).padStart(2, '0')
+            is DCA -> fader.id + 72
             else -> throw IllegalStateException("Fader must be either a channel or a bus")
         }
         osc.sendMessage(OSCMessage("/-stat/solosw/$offsetId", listOf(if (state) 1 else 0)))

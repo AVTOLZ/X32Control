@@ -1,10 +1,8 @@
 package dev.tiebe.avt.x32.commands
 
 import dev.tiebe.avt.x32.OSCController
+import dev.tiebe.avt.x32.api.*
 import dev.tiebe.avt.x32.api.fader.Color
-import dev.tiebe.avt.x32.api.getChannel
-import dev.tiebe.avt.x32.api.getBus
-import dev.tiebe.avt.x32.api.getStatus
 import dev.tiebe.avt.x32.api.internal.Screen
 import kotlinx.coroutines.runBlocking
 
@@ -25,9 +23,10 @@ class FakeLock(private val osc: OSCController): Command {
     override fun run() {
         animationThread = Thread {
             val channels = List(16) { osc.getChannel(it + 1) }
-            val dcaBusses = List(8) { osc.getBus(it + 1) }
+            val dcas = List(8) { osc.getDCA(it + 1) }
+            val lr = osc.getLR()
 
-            val faders = channels + dcaBusses
+            val faders = channels + dcas + lr
 
             animationThreadRunning = true
             var index = 0
