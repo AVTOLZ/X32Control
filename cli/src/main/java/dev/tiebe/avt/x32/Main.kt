@@ -1,10 +1,7 @@
 package dev.tiebe.avt.x32
 
 import dev.tiebe.avt.x32.api.fader.channel.Channel
-import dev.tiebe.avt.x32.api.getChannel
-import dev.tiebe.avt.x32.api.getStatus
 import dev.tiebe.avt.x32.commands.*
-import kotlinx.coroutines.runBlocking
 
 // User variables
 val IP = "192.168.0.20"
