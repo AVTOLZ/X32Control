@@ -6,7 +6,7 @@ import dev.tiebe.avt.x32.commands.*
 import kotlinx.coroutines.runBlocking
 
 // User variables
-const val IP = "192.168.0.20"
+const val IP = "192.168.1.94"
 
 fun main(args: Array<String>) {
     var localPort = 10024
@@ -23,12 +23,13 @@ fun main(args: Array<String>) {
         channels.add(Channel(osc, i))
     }
     // TODO Busses, Matrices, DCAs, masters
+    var delim = ","
     while (true) {
         try {
             print("> ")
-            var command = readlnOrNull()?.split(",")
+            var command = readlnOrNull()?.split(delim)
             while (command == null) {
-                command = readlnOrNull()?.split(",")
+                command = readlnOrNull()?.split(delim)
             }
 
             when (command[0]) {
@@ -44,6 +45,7 @@ fun main(args: Array<String>) {
                 "color" -> Color(osc).setArguments(command)?.run() ?: println("Arg 1: Channel\nArg 2: Color")
 
                 "custom" -> runBlocking { osc.getValue(OSCMessage(command[1])).let { message -> println("${message?.address}, ${message?.arguments}") } }
+                "delim" -> delim = command[1]
                 else -> println("Command not found")
             }
 
