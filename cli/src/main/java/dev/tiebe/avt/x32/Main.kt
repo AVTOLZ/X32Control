@@ -3,9 +3,10 @@ package dev.tiebe.avt.x32
 import com.illposed.osc.OSCMessage
 import dev.tiebe.avt.x32.api.fader.channel.Channel
 import dev.tiebe.avt.x32.commands.*
+import kotlinx.coroutines.runBlocking
 
 // User variables
-val IP = "192.168.122.209"
+const val IP = "192.168.0.20"
 
 fun main(args: Array<String>) {
     var localPort = 10024
@@ -24,7 +25,7 @@ fun main(args: Array<String>) {
     // TODO Busses, Matrices, DCAs, masters
     while (true) {
         try {
-            print(" > ")
+            print("> ")
             var command = readlnOrNull()?.split(",")
             while (command == null) {
                 command = readlnOrNull()?.split(",")
@@ -42,7 +43,7 @@ fun main(args: Array<String>) {
                 "blocklock" -> BlockLock(osc).setArguments(command)?.run() ?: println("Arg 1: Boolean")
                 "color" -> Color(osc).setArguments(command)?.run() ?: println("Arg 1: Channel\nArg 2: Color")
 
-                "custom" -> osc.sendMessage(OSCMessage(command[1]))
+                "custom" -> runBlocking { osc.getValue(OSCMessage(command[1])).let { message -> println("${message?.address}, ${message?.arguments}") } }
                 else -> println("Command not found")
             }
 

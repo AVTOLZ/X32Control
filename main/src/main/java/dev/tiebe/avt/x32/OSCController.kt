@@ -10,7 +10,8 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 import java.net.InetAddress
 import java.net.InetSocketAddress
-import java.util.UUID
+import java.nio.charset.Charset
+import java.util.*
 import java.util.concurrent.CopyOnWriteArrayList
 
 @Suppress("MemberVisibilityCanBePrivate", "unused") //Public API, so don't need IDE warnings.
@@ -32,15 +33,14 @@ class OSCController(ip: String, port: Int, localPort: Int, daemonThread: Boolean
 
     val subscriptionThreads = mutableMapOf<UUID, Pair<Thread, (OSCMessageEvent) -> Unit>>()
 
-    fun subscribe(address: String, onReceive: (it: OSCMessageEvent) -> Unit): UUID {
+    fun subscribe(address: String, updateTime: Int = 0, onReceive: (it: OSCMessageEvent) -> Unit): UUID {
         val messageCallback = { it: OSCMessageEvent ->
-            println(it.message.address)
             if (it.message.address == address) {
                 onReceive(it)
             }
         }
 
-        val message = OSCMessage("/subscribe", listOf(address, 0))
+        val message = OSCMessage("/subscribe", listOf(address, updateTime))
         client.send(message)
 
         val thread = Thread {
@@ -124,7 +124,6 @@ class OSCController(ip: String, port: Int, localPort: Int, daemonThread: Boolean
     init {
         server.dispatcher.addBadDataListener {
             println("Bad data received")
-            println(it.data)
         }
 
         server.dispatcher.addListener(
@@ -133,7 +132,6 @@ class OSCController(ip: String, port: Int, localPort: Int, daemonThread: Boolean
                 override fun matches(messageEvent: OSCMessageEvent?): Boolean = true
             }
         ) { message ->
-            println(message.message.address)
             registeredCallbacks.iterator().forEach { it(message) }
         }
 

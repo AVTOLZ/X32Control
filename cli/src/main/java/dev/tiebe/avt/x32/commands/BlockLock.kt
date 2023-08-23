@@ -39,7 +39,7 @@ class BlockLock(private val osc: OSCController): Command {
         runBlocking {
             val currentLock = osc.getStatus().getLock()
 
-            subscription = osc.subscribe("/-stat/lock") {
+            subscription = osc.subscribe("/-stat/lock", 10) {
                 if ((it.message.arguments[0] as Int == 1) != currentLock) {
                     println("Lock changed")
                     osc.getStatus().setLock(currentLock)
