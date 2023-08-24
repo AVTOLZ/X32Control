@@ -2,6 +2,7 @@ package dev.tiebe.avt.x32.commands
 
 import dev.tiebe.avt.x32.OSCController
 import dev.tiebe.avt.x32.api.getChannel
+import kotlin.math.sin
 
 class FaderPreset(private val osc: OSCController): Command {
     override var arguments: List<Any> = listOf()
@@ -9,6 +10,8 @@ class FaderPreset(private val osc: OSCController): Command {
     private val line = List(16) { it / 15f }
     private val zigzag = List(16) { it % 2f }
     private val line8 = List(16) { (it % 8f) / 7}
+    private val sine = List(16) { (0.5 * sin((0.4 * it)) + 0.5).toFloat() }
+
     //private val
     override fun setArguments(args: List<String>): Command? {
         if(args.size != 2) {
@@ -19,7 +22,7 @@ class FaderPreset(private val osc: OSCController): Command {
                 "line"      -> arguments = line
                 "zigzag"    -> arguments = zigzag
                 "line8"     -> arguments = line8
-                //"sine"      -> arguments = sine
+                "sine"      -> arguments = sine
 
                 else        -> print("Unknown command")
             }
@@ -30,7 +33,7 @@ class FaderPreset(private val osc: OSCController): Command {
     override fun run() {
         arguments.forEachIndexed { channel, level ->
             osc.getChannel(channel + 1).mix.setLevel(level as Float)
-            Thread.sleep(100)
+            Thread.sleep(50)
         }
     }
 }

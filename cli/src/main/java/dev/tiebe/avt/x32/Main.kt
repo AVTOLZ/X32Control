@@ -27,9 +27,9 @@ fun main(args: Array<String>) {
     while (true) {
         try {
             print("> ")
-            var command = readlnOrNull()?.split(delim)
+            var command = readlnOrNull()?.split(delim, ".", ",", " ")
             while (command == null) {
-                command = readlnOrNull()?.split(delim)
+                command = readlnOrNull()?.split(delim, ".", ",", " ")
             }
 
             when (command[0]) {
@@ -43,6 +43,7 @@ fun main(args: Array<String>) {
                 "solo" -> Solo(osc).setArguments(command)?.run() ?: println("Arg 1: Channel\nArg 2: Boolean")
                 "blocklock" -> BlockLock(osc).setArguments(command)?.run() ?: println("Arg 1: Boolean")
                 "color" -> Color(osc).setArguments(command)?.run() ?: println("Arg 1: Channel\nArg 2: Color")
+                "animation", "ani" -> Animation(osc).setArguments(command)?.run() ?: println("Arg 1: Animation")
 
                 "custom" -> runBlocking { osc.getValue(OSCMessage(command[1])).let { message -> println("${message?.address}, ${message?.arguments}") } }
                 "delim" -> delim = command[1]
