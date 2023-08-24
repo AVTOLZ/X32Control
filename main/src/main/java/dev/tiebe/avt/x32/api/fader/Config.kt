@@ -1,6 +1,7 @@
 package dev.tiebe.avt.x32.api.fader
 
 import com.illposed.osc.OSCMessage
+import dev.tiebe.avt.x32.api.channelIndex
 import dev.tiebe.avt.x32.api.fader.auxin.AuxIn
 import dev.tiebe.avt.x32.api.fader.bus.Bus
 import dev.tiebe.avt.x32.api.fader.channel.Channel
@@ -37,17 +38,7 @@ class Config(val fader: Fader) {
     }
 
     fun setSolo(state: Boolean) {
-        val offsetId = when (fader) {
-            is Channel -> fader.id.padStart(2, '0')
-            is AuxIn -> (fader.id + 32)
-            is FtxRn -> (fader.id + 40)
-            is Bus -> (fader.id + 48)
-            is Matrix -> (fader.id + 64)
-            is LR -> "71"
-            is Mono -> "72"
-            is DCA -> fader.id + 72
-            else -> throw IllegalStateException("Fader must be either a channel or a bus")
-        }
+        val offsetId = fader.channelIndex
         osc.sendMessage(OSCMessage("/-stat/solosw/$offsetId", listOf(if (state) 1 else 0)))
     }
 }
