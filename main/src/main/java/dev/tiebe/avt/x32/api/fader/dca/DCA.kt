@@ -4,7 +4,6 @@ import dev.tiebe.avt.x32.OSCController
 import dev.tiebe.avt.x32.api.fader.*
 
 class DCA(oscController: OSCController, id: Int): Fader(oscController, id) {
-    private val idString = id.toString().padStart(1, '0')
     override val classString: String = "dca"
 
     override val config: Config = Config(this)
@@ -16,6 +15,8 @@ class DCA(oscController: OSCController, id: Int): Fader(oscController, id) {
     }
 
     override val eq: Eq = Eq(this)
+
+    override val eqAmount: Int = 0
 
     init {
         if (id < 1 || id > 8)
