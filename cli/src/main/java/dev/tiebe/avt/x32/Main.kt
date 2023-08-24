@@ -6,7 +6,7 @@ import dev.tiebe.avt.x32.commands.*
 import kotlinx.coroutines.runBlocking
 
 // User variables
-const val IP = "192.168.1.94"
+const val IP = "192.168.0.20"
 
 fun main(args: Array<String>) {
     var localPort = 10024

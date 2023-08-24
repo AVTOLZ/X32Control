@@ -30,6 +30,7 @@ class FaderPreset(private val osc: OSCController): Command {
     override fun run() {
         arguments.forEachIndexed { channel, level ->
             osc.getChannel(channel + 1).mix.setLevel(level as Float)
+            Thread.sleep(100)
         }
     }
 }

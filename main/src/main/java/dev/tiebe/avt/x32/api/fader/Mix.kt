@@ -8,6 +8,10 @@ class Mix(val fader: Fader) {
     private val idString = fader.id.toString().padStart(2, '0')
     private val osc = fader.oscController // wat is het leuke dat je gevonden hebt?; dat ik je kan forceren om me te followen :); is dat leuk tho?; je betn net een gymleraar haaha; whahaha, voor mij is t leuk
 
+    suspend fun getMute(): Boolean {
+        return osc.getValue(OSCMessage("/${fader.classString}/$idString/mix/on"))?.arguments?.get(0) == 0
+    }
+
     fun setMute(mute: Boolean) {
         osc.sendMessage(OSCMessage("/${fader.classString}/$idString/mix/on", listOf(if (mute) 0 else 1)))
     }
