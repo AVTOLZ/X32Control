@@ -43,7 +43,7 @@ class Status private constructor(private val osc: OSCController) {
     suspend fun getSelection(): Fader {
         val value = osc.getValue(OSCMessage("/-stat/selidx")) ?: throw IllegalStateException("Could not get selection")
 
-        return osc.getFaderFromIndex(value.arguments[0] as String)
+        return osc.getFaderFromIndex((value.arguments[0] as Int + 1).toString())
     }
 
     fun setChannelFaderBank(bank: ChannelFaderBank) {

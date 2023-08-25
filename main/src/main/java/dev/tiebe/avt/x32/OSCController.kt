@@ -41,18 +41,18 @@ class OSCController(ip: String, port: Int, localPort: Int, daemonThread: Boolean
         }
 
         val message = OSCMessage("/subscribe", listOf(address, updateTime))
-        client.send(message)
+        sendMessage(message)
 
         val thread = Thread {
             while (true) {
                 if (Thread.interrupted()) {
                     println("INTERRUPTED")
-                    client.send(OSCMessage("/unsubscribe", listOf(address)))
+                    sendMessage(OSCMessage("/unsubscribe", listOf(address)))
                     return@Thread
                 }
-                Thread.sleep(5000)
+                Thread.sleep(3500)
 
-                client.send(OSCMessage("/renew", listOf(address)))
+                sendMessage(OSCMessage("/renew", listOf(address)))
             }
         }
 
@@ -77,7 +77,7 @@ class OSCController(ip: String, port: Int, localPort: Int, daemonThread: Boolean
         val maxMessageSize = 512  // Replace with the buffer's actual size
         var totalMessageSize = 0
 
-        message.arguments.forEachIndexed { index, argument ->
+        val paddedArgs = message.arguments.map { argument ->
             if (argument is String) {
                 if (totalMessageSize + argument.length > maxMessageSize) {
                     throw IllegalArgumentException("The message size limit of $maxMessageSize has been exceeded")
@@ -85,11 +85,12 @@ class OSCController(ip: String, port: Int, localPort: Int, daemonThread: Boolean
 
                 val paddedArgument = argument + "\u0000".repeat(4 - (argument.length % 4))
                 totalMessageSize += paddedArgument.length
-                message.arguments[index] = paddedArgument
+                return@map paddedArgument
             }
+            argument
         }
 
-        client.send(message)
+        client.send(OSCMessage(message.address, paddedArgs, message.info))
     }
 
     suspend fun getValue(message: OSCMessage): OSCMessage? {
@@ -107,7 +108,7 @@ class OSCController(ip: String, port: Int, localPort: Int, daemonThread: Boolean
 
         addMessageCallback(listener)
 
-        client.send(message)
+        sendMessage(message)
 
         return withTimeoutOrNull(2000) {
             val result = channel.receive()

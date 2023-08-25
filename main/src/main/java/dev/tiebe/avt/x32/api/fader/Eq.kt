@@ -3,8 +3,14 @@ package dev.tiebe.avt.x32.api.fader
 import com.illposed.osc.OSCMessage
 import kotlin.math.log10
 
-class Eq(val fader: Fader) {
-    open val stateOSCMessage = "/${fader.classString}/${fader.idString}/eq/on"
+open class Eq(val fader: Fader) {
+    open val mainMessage = "/${fader.classString}/${fader.idString}/eq"
+    open val stateOSCMessage = "$mainMessage/on"
+    open val bandOSCMessage = "$mainMessage/%d"
+    open val typeOSCMessage = "$bandOSCMessage/type"
+    open val frequencyOSCMessage = "$bandOSCMessage/f"
+    open val gainOSCMessage = "$bandOSCMessage/g"
+    open val qOSCMessage = "$bandOSCMessage/q"
 
     fun setState(state: Boolean) {
         fader.oscController.sendMessage(OSCMessage(stateOSCMessage, listOf(if (state) 1 else 0)))
@@ -14,16 +20,16 @@ class Eq(val fader: Fader) {
         if (band < 1 || band > fader.eqAmount)
             throw IllegalArgumentException("Band must be between 1 and ${fader.eqAmount}")
 
-        fader.oscController.sendMessage(OSCMessage("/${fader.classString}/${fader.idString}/eq/$band/type", listOf(type.value)))
+        fader.oscController.sendMessage(OSCMessage(typeOSCMessage.format(band), listOf(type.value)))
     }
 
-    fun setFrequency(band: Int, frequency: Int) {
+    fun setFrequency(band: Int, frequency: Float) {
         if (frequency < 20 || frequency > 20000)
             throw IllegalArgumentException("Frequency must be between 20 and 20000 Hz")
         else if (band < 1 || band > fader.eqAmount)
             throw IllegalArgumentException("Band must be between 1 and ${fader.eqAmount}")
 
-        fader.oscController.sendMessage(OSCMessage("/${fader.classString}/${fader.idString}/eq/$band/f", listOf(frequency)))
+        fader.oscController.sendMessage(OSCMessage(frequencyOSCMessage.format(band), listOf(frequency)))
     }
 
     fun setGain(band: Int, gain: Float) {
@@ -34,16 +40,16 @@ class Eq(val fader: Fader) {
 
         val x32Gain = (gain * 4).toInt() / 4f
 
-        fader.oscController.sendMessage(OSCMessage("/${fader.classString}/${fader.idString}/eq/$band/g", listOf(x32Gain)))
+        fader.oscController.sendMessage(OSCMessage(gainOSCMessage.format(band), listOf(x32Gain)))
     }
 
-    fun setQ(band: Int, q: Int) {
-        /*if (q < 0 || q > 10) TODO: check what the min and max is, and check step size
-            throw IllegalArgumentException("Q must be between 0 and 10")
-        else */if (band < 1 || band > fader.eqAmount)
+    fun setQ(band: Int, q: Float) {
+        if (q < 0 || q > 1)
+            throw IllegalArgumentException("Q must be between 0 and 1")
+        else if (band < 1 || band > fader.eqAmount)
             throw IllegalArgumentException("Band must be between 1 and ${fader.eqAmount}")
 
-        fader.oscController.sendMessage(OSCMessage("/${fader.classString}/${fader.idString}/eq/$band/q", listOf(q)))
+        fader.oscController.sendMessage(OSCMessage(qOSCMessage.format(band), listOf(q)))
     }
 
 

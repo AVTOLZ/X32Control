@@ -45,7 +45,10 @@ fun main(args: Array<String>) {
                 "color" -> Color(osc).setArguments(command)?.run() ?: println("Arg 1: Channel\nArg 2: Color")
                 "animation", "ani" -> Animation(osc).setArguments(command)?.run() ?: println("Arg 1: Animation")
 
+                "eqsync" -> EQFaderSync(osc).setArguments(command)?.run() ?: println("Arg 1: Boolean")
+
                 "custom" -> runBlocking { osc.getValue(OSCMessage(command[1])).let { message -> println("${message?.address}, ${message?.arguments}") } }
+                "subscribe" -> osc.subscribe(command[1], 20) { println("Address: ${it.message.address}; Arguments: ${it.message.arguments}") }
                 "delim" -> delim = command[1]
                 else -> println("Command not found")
             }
