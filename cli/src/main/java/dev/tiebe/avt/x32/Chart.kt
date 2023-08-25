@@ -43,7 +43,7 @@ fun main() {
     val frequencies = (0..44100).map { it.toDouble() }
 
     val series = XYSeries("Frequency Response")
-    val sampleSize = 1000
+    val sampleSize = 20000
 
     // Compute the magnitude response for a range of frequencies
     for (i in 0 until sampleSize) {
@@ -55,15 +55,20 @@ fun main() {
     dataset.addSeries(series)
 
     // Create chart
-    val chart = ChartFactory.createXYLineChart(
-        "Biquad Peak Filter Frequency Response",
-        "Frequency (Hz)",
-        "Gain (dB)",
-        dataset
-    )
+    val chart = ChartFactory.createXYLineChart("Biquad Filter", "Frequency", "Magnitude (dB)",
+        dataset, PlotOrientation.VERTICAL, true, true, false)
 
-    // Display the chart
-    val frame = ChartFrame("Biquad Peak Filter Frequency Response", chart)
+    val logAxis = LogAxis("Frequency")
+    logAxis.setBase(10.0)
+    logAxis.setRange(20.0, 20000.0)  // Range of frequencies from 20 Hz to 20 kHz
+
+    val numberFormat = DecimalFormat("0.#")  // or whichever format suits your needs, e.g. "0.#"
+    numberFormat.maximumIntegerDigits = 5
+    logAxis.setNumberFormatOverride(numberFormat)
+
+    chart.getXYPlot().setDomainAxis(logAxis)  // Apply log axis to the chart
+
+    val frame = ChartFrame("Biquad Filter", chart)
     frame.pack()
     frame.isVisible = true
 
