@@ -3,18 +3,15 @@ package dev.tiebe.avt.x32.commands
 import dev.tiebe.avt.x32.OSCController
 import dev.tiebe.avt.x32.api.fader.Eq
 import dev.tiebe.avt.x32.api.fader.Fader
-import dev.tiebe.avt.x32.api.getStatus
-import kotlinx.coroutines.runBlocking
 import java.util.*
-import kotlin.math.sqrt
 
 class EQFaderSync(val osc: OSCController): Command {
     override var arguments: List<Any> = listOf()
 
     //gain is van 0-1 (-15db-15db), freq is van 0-1 (20hz-20khz), q is van 0-1 (10-0.3 (nee, niet 0.3-10, 0 is 10, 1 is 0.3))
-    val testBands = listOf(EQBand(type = Eq.Companion.EQType.LShv, freq =0.245f, gain =0.9f, q =0.46478873f), EQBand(
-        type = Eq.Companion.EQType.PEQ, freq =0.505f, gain =0.9583333f, q =0.1971831f), EQBand(type = Eq.Companion.EQType.VEQ, freq =0.71f, gain =0.0f, q =0.0f), EQBand(
-        type = Eq.Companion.EQType.HShv, freq =0.925f, gain =0.85833335f, q =0.46478873f))
+    val testBands = listOf(EQBand(type = Eq.Companion.EQType.LShv, freq =0.245, gain =0.9, q =0.46478873), EQBand(
+        type = Eq.Companion.EQType.PEQ, freq =0.505, gain =0.9583333, q =0.1971831), EQBand(type = Eq.Companion.EQType.VEQ, freq =0.71, gain =0.0, q =0.0), EQBand(
+        type = Eq.Companion.EQType.HShv, freq =0.925, gain =0.85833335, q =0.46478873))
 
     companion object {
         const val updateFrequency = 30
@@ -33,10 +30,12 @@ class EQFaderSync(val osc: OSCController): Command {
 
     override fun run() {
         if (arguments[0] as Boolean) {
-            runBlocking {
+
+
+/*            runBlocking {
                 val fader = osc.getStatus().getSelection()
                 subscribeEQ(fader)
-            }
+            }*/
         } else {
             for (sub in subscriptions) {
                 osc.unsubscribe(sub)
@@ -45,7 +44,7 @@ class EQFaderSync(val osc: OSCController): Command {
     }
 
     private fun subscribeEQ(fader: Fader) {
-        val bands = MutableList(fader.eqAmount) { EQBand(Eq.Companion.EQType.LCut, 0f, 0f, 0f) }
+        val bands = MutableList(fader.eqAmount) { EQBand(Eq.Companion.EQType.LCut, 0.0, 0.0, 0.0) }
 
         subscribeType(fader) { band, newType ->
             bands[band - 1].type = newType
@@ -79,31 +78,31 @@ class EQFaderSync(val osc: OSCController): Command {
         }
     }
 
-    private fun subscribeFreq(fader: Fader, onReceive: (Int, Float) -> Unit) {
+    private fun subscribeFreq(fader: Fader, onReceive: (Int, Double) -> Unit) {
         repeat(fader.eqAmount) {
             subscriptions.add(
                 osc.subscribe(fader.eq.frequencyOSCMessage.format(it + 1), updateFrequency) { message ->
-                    onReceive(it + 1, message.message.arguments[0] as Float)
+                    onReceive(it + 1, (message.message.arguments[0] as Float).toDouble())
                 }
             )
         }
     }
 
-    private fun subscribeGain(fader: Fader, onReceive: (Int, Float) -> Unit) {
+    private fun subscribeGain(fader: Fader, onReceive: (Int, Double) -> Unit) {
         repeat(fader.eqAmount) {
             subscriptions.add(
                 osc.subscribe(fader.eq.gainOSCMessage.format(it + 1), updateFrequency) { message ->
-                    onReceive(it + 1, message.message.arguments[0] as Float)
+                    onReceive(it + 1, (message.message.arguments[0] as Float).toDouble())
                 }
             )
         }
     }
 
-    private fun subscribeQ(fader: Fader, onReceive: (Int, Float) -> Unit) {
+    private fun subscribeQ(fader: Fader, onReceive: (Int, Double) -> Unit) {
         repeat(fader.eqAmount) {
             subscriptions.add(
                 osc.subscribe(fader.eq.qOSCMessage.format(it + 1), updateFrequency) { message ->
-                    onReceive(it + 1, message.message.arguments[0] as Float)
+                    onReceive(it + 1, (message.message.arguments[0] as Float).toDouble())
                 }
             )
         }
@@ -128,5 +127,5 @@ class EQFaderSync(val osc: OSCController): Command {
     }
 
 
-    data class EQBand(var type: Eq.Companion.EQType, var freq: Float, var gain: Float, var q: Float)
+    data class EQBand(var type: Eq.Companion.EQType, var freq: Double, var gain: Double, var q: Double)
 }
