@@ -8,6 +8,7 @@ import dev.tiebe.avt.x32.api.fader.Eq.Companion.getFilterType
 import dev.tiebe.avt.x32.api.fader.Fader
 import dev.tiebe.avt.x32.api.getFaderFromIndex
 import dev.tiebe.avt.x32.api.getStatus
+import dev.tiebe.avt.x32.api.internal.Status
 import dev.tiebe.avt.x32.biquad.BiQuadraticFilter
 import dev.tiebe.avt.x32.utils.*
 import kotlinx.coroutines.runBlocking
@@ -45,6 +46,8 @@ class EQFaderSync(val osc: OSCController): Command {
 
                 savedFaderSettings = List(16) { FaderSettings.fromFader(osc.getFaderFromIndex((it + 17).toString())) }
                 changeFaderSettings()
+
+                osc.getStatus().setChannelFaderBank(Status.Companion.ChannelFaderBank.CH17_32)
 
                 subscribeEQ(fader)
                 subscribeSolo(fader)
