@@ -27,10 +27,7 @@ fun main(args: Array<String>) {
     while (true) {
         try {
             print("> ")
-            var command = readlnOrNull()?.split(delim, ".", ",", " ")
-            while (command == null) {
-                command = readlnOrNull()?.split(delim, ".", ",", " ")
-            }
+            val command = readlnOrNull()?.split(delim, ".", ",", " ") ?:  continue
 
             when (command[0]) {
                 "fakelock" -> FakeLock(osc).setArguments(command).run()

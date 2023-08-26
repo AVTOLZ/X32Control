@@ -42,8 +42,8 @@ open class Eq(val fader: Fader) {
     }
 
     fun setFrequency(band: Int, frequency: Float) {
-        if (frequency < 20 || frequency > 20000)
-            throw IllegalArgumentException("Frequency must be between 20 and 20000 Hz")
+        if (frequency < 0 || frequency > 1)
+            throw IllegalArgumentException("Frequency must be between 0 and 1")
         else if (band < 1 || band > fader.eqAmount)
             throw IllegalArgumentException("Band must be between 1 and ${fader.eqAmount}")
 

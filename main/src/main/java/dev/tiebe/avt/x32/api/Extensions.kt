@@ -35,15 +35,16 @@ val Fader.channelIndex get() = when (this) {
         else -> throw IllegalStateException("Fader is not a valid type")
     }
 
-fun OSCController.getFaderFromIndex(index: String) =
-    when (val id = index.toInt()) {
-        in 1..32 -> getChannel(id)
-        in 33..40 -> getAuxIn(id - 32)
-        in 41..48 -> getFtxRn(id - 40)
-        in 49..56 -> getBus(id - 48)
-        in 57..64 -> getMatrix(id - 64)
-        71 -> getLR()
-        72 -> getMono()
-        in 73..80 -> getDCA(id - 72)
-        else -> throw IllegalArgumentException("Index must be between 1 and 80")
-    }
+fun OSCController.getFaderFromIndex(index: String) = getFaderFromIndex(index.toInt())
+
+fun OSCController.getFaderFromIndex(index: Int) = when (index) {
+    in 1..32 -> getChannel(index)
+    in 33..40 -> getAuxIn(index - 32)
+    in 41..48 -> getFtxRn(index - 40)
+    in 49..56 -> getBus(index - 48)
+    in 57..63 -> getMatrix(index - 56)
+    71 -> getLR()
+    72 -> getMono()
+    in 73..80 -> getDCA(index - 72)
+    else -> throw IllegalArgumentException("Index must be between 1 and 80")
+}

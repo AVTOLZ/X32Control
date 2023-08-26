@@ -42,7 +42,6 @@ fun Double.mapToLin(fromRange: IntRange, toRange: ClosedFloatingPointRange<Doubl
 }
 
 fun findNearestValue(value: Double, list: List<Double>): Double {
-    println("Finding nearest value to $value in $list")
     var min = Double.MAX_VALUE
     var closest = value
 

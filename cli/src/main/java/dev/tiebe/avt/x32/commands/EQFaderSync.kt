@@ -32,11 +32,18 @@ class EQFaderSync(val osc: OSCController): Command {
         }
     }
 
+    private val faders = List(16) { osc.getFaderFromIndex((it + 17).toString()).also { it.mix.setMute(true) } }
+    private val frequencies = List(faders.size) { index -> index.toDouble().mapToLin(0..15, 20.0..20000.0) }
+
+    var bands: List<EQBand> = listOf()
+
     override fun run() {
         if (arguments[0] as Boolean) {
             runBlocking {
                 val fader = osc.getStatus().getSelection()
                 subscribeEQ(fader)
+                subscribeSolo(fader)
+                subscribeFaders(fader)
             }
         } else {
             for (sub in subscriptions) {
@@ -45,8 +52,62 @@ class EQFaderSync(val osc: OSCController): Command {
         }
     }
 
+    var selectedBand = -1
+
+    private fun subscribeSolo(fader: Fader) {
+        val soloFaders = List(fader.eqAmount) { faders[it] }
+        println(faders[0].idString)
+
+        for (soloFader in soloFaders) {
+            subscriptions.add(
+                osc.subscribe("/-stat/solosw/${soloFader.idString}", updateFrequency) { message ->
+                    val solo = message.message.arguments[0] as Int
+                    if (solo == 1) {
+                        //Todo: maybe make this solo also false (so it doesn't interfere with actual solos, and invert the color of the led)
+                        for (otherSoloFader in soloFaders) {
+                            if (otherSoloFader != soloFader) {
+                                otherSoloFader.config.setSolo(false)
+                            }
+                        }
+
+                        println("Soloing band ${soloFaders.indexOf(soloFader) + 1}")
+                        selectedBand = soloFaders.indexOf(soloFader) + 1
+                    }
+                }
+            )
+        }
+    }
+
+    @Volatile var changingFader: Pair<Fader?, Long> = null to 0
+    private fun subscribeFaders(fader: Fader) {
+        faders.forEachIndexed { index, eqFader ->
+            subscriptions.add(
+                osc.subscribe(eqFader.mix.levelOSCCommand, updateFrequency) { message ->
+                    val level = message.message.arguments[0] as Float
+
+                    if (selectedBand == -1) return@subscribe
+
+                    changingFader = eqFader to System.currentTimeMillis()
+
+                    bands[selectedBand - 1].freq = frequencies[index].fromX32Frequency()
+                    bands[selectedBand - 1].gain = level.toDouble()
+
+                    fader.eq.setFrequency(selectedBand, frequencies[index].fromX32Frequency().toFloat())
+                    fader.eq.setGain(selectedBand, level)
+
+                    Thread {
+                        Thread.sleep(505)
+                        if (changingFader.first == eqFader && System.currentTimeMillis() - changingFader.second > 500) {
+                            runCalculations(bands)
+                        }
+                    }.start()
+                }
+            )
+        }
+    }
+
     private fun subscribeEQ(fader: Fader) {
-        val bands = runBlocking {
+        bands = runBlocking {
              List(fader.eqAmount) { EQBand(fader.eq.getType(it + 1), fader.eq.getFrequency(it + 1).toDouble(), fader.eq.getGain(it + 1).toDouble(), fader.eq.getQ(it + 1).toDouble()) }
         }
 
@@ -82,12 +143,7 @@ class EQFaderSync(val osc: OSCController): Command {
         }
     }
 
-    private val faders = List(16) { osc.getFaderFromIndex((it + 17).toString()).also { it.mix.setMute(true) } }
-
     private fun runCalculations(bands: List<EQBand>) {
-        val frequencies = List(faders.size) { index -> index.toDouble().mapToLin(0..15, 20.0..20000.0) }
-
-        //TODO: check nearest fader to every bands frequency, and calculate from there
         val biquads = bands.map {
             val frequency = findNearestValue(it.freq.toX32Frequency(), frequencies).fromX32Frequency()
             println(frequency)
@@ -95,6 +151,8 @@ class EQFaderSync(val osc: OSCController): Command {
         }
 
         faders.forEachIndexed { index, fader ->
+            if (changingFader.first == fader && System.currentTimeMillis() - changingFader.second < 500) return@forEachIndexed
+
             val freqAtFader = frequencies[index]
             var total = 0.0
 

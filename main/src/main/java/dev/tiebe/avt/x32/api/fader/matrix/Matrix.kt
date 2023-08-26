@@ -15,6 +15,6 @@ class Matrix(oscController: OSCController, id: Int): Fader(oscController, id) {
 
     init {
         if (id < 1 || id > 6)
-            throw IllegalArgumentException("Matrix number must be between 1 and 8")
+            throw IllegalArgumentException("Matrix number must be between 1 and 6")
     }
 }
