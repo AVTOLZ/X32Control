@@ -40,6 +40,10 @@ class Status private constructor(private val osc: OSCController) {
         osc.sendMessage(OSCMessage("/-stat/selidx", listOf(fader.channelIndex)))
     }
 
+    fun setSelection(faderIndex: Int) {
+        osc.sendMessage(OSCMessage("/-stat/selidx", listOf(faderIndex)))
+    }
+
     suspend fun getSelection(): Fader {
         val value = osc.getValue(OSCMessage("/-stat/selidx")) ?: throw IllegalStateException("Could not get selection")
 

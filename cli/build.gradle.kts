@@ -7,6 +7,7 @@ group = "dev.tiebe.avt.x32"
 version = "1.0-SNAPSHOT"
 
 repositories {
+    mavenLocal()
     mavenCentral()
 }
 

@@ -5,6 +5,7 @@ import com.illposed.osc.transport.OSCPort
 import com.illposed.osc.transport.OSCPortIn
 import com.illposed.osc.transport.OSCPortOut
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.consume
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
@@ -19,6 +20,17 @@ class OSCController(ip: String, port: Int, localPort: Int, daemonThread: Boolean
     val remote = InetSocketAddress(InetAddress.getByName(ip), port)
     private val client = OSCPortOut(OSCSerializerAndParserBuilder(), remote, InetSocketAddress(OSCPort.generateWildcard(remote), localPort))
     private val server = OSCPortIn(localPort).apply { isDaemonListener = daemonThread }
+
+    val queue = Channel<OSCMessage>(Channel.UNLIMITED)
+
+    val queueThread = Thread {
+        while (true) {
+            val message = runBlocking { queue.receive() }
+            client.send(message)
+
+            Thread.sleep(10)
+        }
+    }.also { it.start() }
 
     private val registeredCallbacks = CopyOnWriteArrayList<(OSCMessageEvent) -> Unit>()
 
@@ -45,14 +57,19 @@ class OSCController(ip: String, port: Int, localPort: Int, daemonThread: Boolean
 
         val thread = Thread {
             while (true) {
-                if (Thread.interrupted()) {
+                try {
+                    if (Thread.interrupted()) {
+                        println("INTERRUPTED")
+                        sendMessage(OSCMessage("/unsubscribe", listOf(address)))
+                        return@Thread
+                    }
+                    Thread.sleep(3500)
+                    sendMessage(OSCMessage("/renew", listOf(address)))
+                } catch (e: InterruptedException) {
                     println("INTERRUPTED")
                     sendMessage(OSCMessage("/unsubscribe", listOf(address)))
                     return@Thread
                 }
-                Thread.sleep(3500)
-
-                sendMessage(OSCMessage("/renew", listOf(address)))
             }
         }
 
@@ -74,23 +91,9 @@ class OSCController(ip: String, port: Int, localPort: Int, daemonThread: Boolean
 
 
     fun sendMessage(message: OSCMessage) {
-        val maxMessageSize = 512  // Replace with the buffer's actual size
-        var totalMessageSize = 0
-
-        val paddedArgs = message.arguments.map { argument ->
-            if (argument is String) {
-                if (totalMessageSize + argument.length > maxMessageSize) {
-                    throw IllegalArgumentException("The message size limit of $maxMessageSize has been exceeded")
-                }
-
-                val paddedArgument = argument + "\u0000".repeat(4 - (argument.length % 4))
-                totalMessageSize += paddedArgument.length
-                return@map paddedArgument
-            }
-            argument
+        runBlocking {
+            queue.send(message)
         }
-
-        client.send(OSCMessage(message.address, paddedArgs, message.info))
     }
 
     suspend fun getValue(message: OSCMessage): OSCMessage? {
@@ -133,6 +136,7 @@ class OSCController(ip: String, port: Int, localPort: Int, daemonThread: Boolean
                 override fun matches(messageEvent: OSCMessageEvent?): Boolean = true
             }
         ) { message ->
+            println(message.message.address)
             registeredCallbacks.iterator().forEach { it(message) }
         }
 

@@ -1,6 +1,9 @@
 package dev.tiebe.avt.x32.api.fader
 
 import com.illposed.osc.OSCMessage
+import dev.tiebe.avt.x32.biquad.BiQuadraticFilter
+import kotlin.math.log10
+import kotlin.math.pow
 
 open class Eq(val fader: Fader) {
     open val mainMessage = "/${fader.classString}/${fader.idString}/eq"
@@ -15,11 +18,27 @@ open class Eq(val fader: Fader) {
         fader.oscController.sendMessage(OSCMessage(stateOSCMessage, listOf(if (state) 1 else 0)))
     }
 
-    fun setType(band: Int, type: EQType) {
+    suspend fun getType(band: Int): BiQuadraticFilter.Companion.FilterType {
         if (band < 1 || band > fader.eqAmount)
             throw IllegalArgumentException("Band must be between 1 and ${fader.eqAmount}")
 
-        fader.oscController.sendMessage(OSCMessage(typeOSCMessage.format(band), listOf(type.value)))
+        val type = fader.oscController.getValue(OSCMessage(typeOSCMessage.format(band)))?.arguments?.get(0) as Int
+
+        return getFilterType(type)
+    }
+
+    fun setType(band: Int, type: BiQuadraticFilter.Companion.FilterType) {
+        if (band < 1 || band > fader.eqAmount)
+            throw IllegalArgumentException("Band must be between 1 and ${fader.eqAmount}")
+
+        fader.oscController.sendMessage(OSCMessage(typeOSCMessage.format(band), listOf(getFilterValue(type))))
+    }
+
+    suspend fun getFrequency(band: Int): Float {
+        if (band < 1 || band > fader.eqAmount)
+            throw IllegalArgumentException("Band must be between 1 and ${fader.eqAmount}")
+
+        return (fader.oscController.getValue(OSCMessage(frequencyOSCMessage.format(band)))?.arguments?.get(0) as Float)
     }
 
     fun setFrequency(band: Int, frequency: Float) {
@@ -29,6 +48,13 @@ open class Eq(val fader: Fader) {
             throw IllegalArgumentException("Band must be between 1 and ${fader.eqAmount}")
 
         fader.oscController.sendMessage(OSCMessage(frequencyOSCMessage.format(band), listOf(frequency)))
+    }
+
+    suspend fun getGain(band: Int): Float {
+        if (band < 1 || band > fader.eqAmount)
+            throw IllegalArgumentException("Band must be between 1 and ${fader.eqAmount}")
+
+        return (fader.oscController.getValue(OSCMessage(gainOSCMessage.format(band)))?.arguments?.get(0) as Float)
     }
 
     fun setGain(band: Int, gain: Float) {
@@ -42,6 +68,13 @@ open class Eq(val fader: Fader) {
         fader.oscController.sendMessage(OSCMessage(gainOSCMessage.format(band), listOf(x32Gain)))
     }
 
+    suspend fun getQ(band: Int): Float {
+        if (band < 1 || band > fader.eqAmount)
+            throw IllegalArgumentException("Band must be between 1 and ${fader.eqAmount}")
+
+        return (fader.oscController.getValue(OSCMessage(qOSCMessage.format(band)))?.arguments?.get(0) as Float)
+    }
+
     fun setQ(band: Int, q: Float) {
         if (q < 0 || q > 1)
             throw IllegalArgumentException("Q must be between 0 and 1")
@@ -51,25 +84,40 @@ open class Eq(val fader: Fader) {
         fader.oscController.sendMessage(OSCMessage(qOSCMessage.format(band), listOf(q)))
     }
 
-
     companion object {
-        enum class EQType(val value: Int) {
-            LCut(0),
-            LShv(1),
-            PEQ(2),
-            VEQ(3),
-            HShv(4),
-            HCut(5)
+        fun getFilterType(index: Int): BiQuadraticFilter.Companion.FilterType {
+            return when (index) {
+                0 -> BiQuadraticFilter.Companion.FilterType.HIGHPASS
+                1 -> BiQuadraticFilter.Companion.FilterType.LOWSHELF
+                2 -> BiQuadraticFilter.Companion.FilterType.PEAK
+                3 -> BiQuadraticFilter.Companion.FilterType.VEQ
+                4 -> BiQuadraticFilter.Companion.FilterType.HIGHSHELF
+                5 -> BiQuadraticFilter.Companion.FilterType.LOWPASS
+
+                else -> BiQuadraticFilter.Companion.FilterType.LOWSHELF
+            }
         }
 
-/*        fun EQType.getBiquadFilter(sampleRate: Double, frequency: Double, gain: Double, q: Double): BiquadFilter = when (this) {
-                EQType.LCut -> TODO()
-                EQType.LShv -> TODO()
-                EQType.PEQ -> BiquadPeakFilter(sampleRate, frequency, gain, q)
-                EQType.VEQ -> BiquadPeakFilter(sampleRate, frequency, gain, q/2.3)
-                EQType.HShv -> TODO()
-                EQType.HCut -> TODO()
-            }*/
+        fun getFilterValue(filter: BiQuadraticFilter.Companion.FilterType): Int {
+            return when (filter) {
+                BiQuadraticFilter.Companion.FilterType.LOWPASS -> 0
+                BiQuadraticFilter.Companion.FilterType.LOWSHELF -> 1
+                BiQuadraticFilter.Companion.FilterType.PEAK -> 2
+                BiQuadraticFilter.Companion.FilterType.VEQ -> 3
+                BiQuadraticFilter.Companion.FilterType.HIGHSHELF -> 4
+                BiQuadraticFilter.Companion.FilterType.HIGHPASS -> 5
+                BiQuadraticFilter.Companion.FilterType.BANDPASS -> TODO()
+                BiQuadraticFilter.Companion.FilterType.NOTCH -> TODO()
+            }
+        }
+
+        fun decibelAddition(db1: Double, db2: Double): Double {
+            val factor1 = 10.0.pow(db1 / 10.0)
+            val factor2 = 10.0.pow(db2 / 10.0)
+
+            return 10.0 * log10(factor1 + factor2)
+        }
+
     }
 
 }

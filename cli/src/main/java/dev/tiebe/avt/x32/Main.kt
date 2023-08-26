@@ -6,7 +6,7 @@ import dev.tiebe.avt.x32.commands.*
 import kotlinx.coroutines.runBlocking
 
 // User variables
-const val IP = "192.168.0.20"
+const val IP = "192.168.122.209"
 
 fun main(args: Array<String>) {
     var localPort = 10024
@@ -22,7 +22,7 @@ fun main(args: Array<String>) {
     for(i in 1..32) {
         channels.add(Channel(osc, i))
     }
-    // TODO Busses, Matrices, DCAs, masters
+
     var delim = ","
     while (true) {
         try {
@@ -44,6 +44,7 @@ fun main(args: Array<String>) {
                 "blocklock" -> BlockLock(osc).setArguments(command)?.run() ?: println("Arg 1: Boolean")
                 "color" -> Color(osc).setArguments(command)?.run() ?: println("Arg 1: Channel\nArg 2: Color")
                 "animation", "ani" -> Animation(osc).setArguments(command)?.run() ?: println("Arg 1: Animation")
+                "select" -> Select(osc).setArguments(command)?.run() ?: println("Arg 1: Channel")
 
                 "eqsync" -> EQFaderSync(osc).setArguments(command)?.run() ?: println("Arg 1: Boolean")
 

@@ -48,10 +48,14 @@ class BiQuadraticFilter {
         var Q = Q
         reset()
         Q = if (Q == 0.0) 1e-9 else Q
-        this.type = type
+        Q = if (type == FilterType.VEQ) Q/2.3 else Q
+        Q = if (type == FilterType.LOWPASS || type == FilterType.HIGHPASS) 0.707 else Q
+
+        this.type = if (type == FilterType.VEQ) FilterType.PEAK else type
         this.sample_rate = sample_rate
         this.Q = Q
         this.gainDB = gainDB
+
         reconfigure(center_freq)
     }
 
@@ -128,6 +132,8 @@ class BiQuadraticFilter {
                 a1 = 2 * (gain_abs - 1 - (gain_abs + 1) * cs)
                 a2 = gain_abs + 1 - (gain_abs - 1) * cs - beta * sn
             }
+
+            else -> {}
         }
         // prescale flter constants
         b0 /= a0
@@ -181,7 +187,7 @@ class BiQuadraticFilter {
 
     companion object {
         enum class FilterType {
-            LOWPASS, HIGHPASS, BANDPASS, PEAK, NOTCH, LOWSHELF, HIGHSHELF
+            LOWPASS, HIGHPASS, BANDPASS, PEAK, VEQ, NOTCH, LOWSHELF, HIGHSHELF
         }
 
         const val LOWPASS = 0
