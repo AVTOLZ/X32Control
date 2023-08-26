@@ -1,14 +1,14 @@
 package dev.tiebe.avt.x32.commands
 
 import dev.tiebe.avt.x32.OSCController
+import dev.tiebe.avt.x32.advancedTestBands
 import dev.tiebe.avt.x32.api.fader.Eq
 import dev.tiebe.avt.x32.api.fader.Eq.Companion.getFilterType
 import dev.tiebe.avt.x32.api.fader.Fader
 import dev.tiebe.avt.x32.api.getFaderFromIndex
 import dev.tiebe.avt.x32.api.getStatus
 import dev.tiebe.avt.x32.biquad.BiQuadraticFilter
-import dev.tiebe.avt.x32.utils.fromX32Gain
-import dev.tiebe.avt.x32.utils.toX32Gain
+import dev.tiebe.avt.x32.utils.*
 import kotlinx.coroutines.runBlocking
 import java.util.*
 import kotlin.math.log10
@@ -16,18 +16,6 @@ import kotlin.math.pow
 
 class EQFaderSync(val osc: OSCController): Command {
     override var arguments: List<Any> = listOf()
-
-    //gain is van 0-1 (-15db-15db), freq is van 0-1 (20hz-20khz), q is van 0-1 (10-0.3 (nee, niet 0.3-10, 0 is 10, 1 is 0.3))
-    val testBands = listOf(
-        EQFaderSync.EQBand(type = BiQuadraticFilter.Companion.FilterType.LOWSHELF, freq = 0.245, gain = 0.9, q = 0.46478873),
-        EQFaderSync.EQBand(
-            type = BiQuadraticFilter.Companion.FilterType.PEAK, freq = 0.505, gain = 0.9583333, q = 0.1971831
-        ),
-        EQFaderSync.EQBand(type = BiQuadraticFilter.Companion.FilterType.PEAK, freq = 0.71, gain = 0.0, q = 0.0),
-        EQFaderSync.EQBand(
-            type = BiQuadraticFilter.Companion.FilterType.HIGHSHELF, freq = 0.925, gain = 0.85833335, q = 0.46478873
-        )
-    )
 
     companion object {
         const val updateFrequency = 30
@@ -62,18 +50,33 @@ class EQFaderSync(val osc: OSCController): Command {
              List(fader.eqAmount) { EQBand(fader.eq.getType(it + 1), fader.eq.getFrequency(it + 1).toDouble(), fader.eq.getGain(it + 1).toDouble(), fader.eq.getQ(it + 1).toDouble()) }
         }
 
-        println(bands)
+        runCalculations(bands)
 
         subscribeType(fader) { band, newType ->
+            val eqband = bands[band-1]
+
+            if (eqband.type == newType) return@subscribeType
             bands[band - 1].type = newType
+            runCalculations(bands)
         }
         subscribeFreq(fader) { band, newFreq ->
+            val eqband = bands[band-1]
+
+            if (eqband.freq == newFreq) return@subscribeFreq
             bands[band - 1].freq = newFreq
+            runCalculations(bands)
         }
         subscribeQ(fader) { band, newQ ->
+            val eqband = bands[band-1]
+
+            if (eqband.q == newQ) return@subscribeQ
             bands[band - 1].q = newQ
+            runCalculations(bands)
         }
         subscribeGain(fader) { band, newGain ->
+            val eqband = bands[band-1]
+
+            if (eqband.gain == newGain) return@subscribeGain
             bands[band - 1].gain = newGain
             runCalculations(bands)
         }
@@ -85,23 +88,23 @@ class EQFaderSync(val osc: OSCController): Command {
         val biquads = bands.map { it.getBiquad() }
 
         faders.forEachIndexed { index, fader ->
-            val freqAtFader = 20.0 * 10.0.pow(3 * index.toDouble())
+            val freqAtFader = index.toDouble().mapToLin(0..15, 20.0..20000.0)
             var total = 0.0
 
             for (biquad in biquads) {
-                total += biquad.log_result(freqAtFader)
+                total += biquad.result(freqAtFader) - 1
             }
 
-            println(total)
-            println(total.toX32Gain().toFloat())
+            total += 1
 
-            var gain = total.toX32Gain().toFloat()
-            if (gain < 0) {
-                gain = 0f
-            } else if (gain > 1) {
-                gain = 1f
-            }
-            fader.mix.setLevel(gain)
+            var db = 20 * log10(total)
+
+            if (db < -15) db = -15.0 else if (db > 15) db = 15.0
+            println("Fader $index: $db")
+
+            val newValue = ((db / 15.0f) + 1) /2.0
+
+            fader.mix.setLevel(newValue.toFloat())
         }
     }
 

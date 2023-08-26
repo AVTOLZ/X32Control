@@ -1,5 +1,8 @@
 package dev.tiebe.avt.x32.utils
 
+import kotlin.math.exp
+import kotlin.math.ln
+import kotlin.math.log10
 import kotlin.math.pow
 
 fun Float.toDb(): Float = if (this >= 0.5) this * 40f - 30f
@@ -33,3 +36,10 @@ fun Double.toX32Gain(): Double = -15.0 + this * (15.0 - -15.0)
 fun Double.fromX32Frequency(): Double = (this / 20.0).pow(1.0 / 3.0)
 fun Double.fromX32Q(): Double = (this / 10.0).pow(1.0 / 3.0)
 fun Double.fromX32Gain(): Double = (this + 15.0) / (15.0 - -15.0)
+
+fun Double.mapToLin(fromRange: IntRange, toRange: ClosedFloatingPointRange<Double>): Double {
+    val logMin = log10(toRange.start)
+    val logMax = log10(toRange.endInclusive)
+    val scale = (logMax - logMin) / (fromRange.last - fromRange.first)
+    return 10.0.pow(logMin + scale * (this - fromRange.first))
+}
