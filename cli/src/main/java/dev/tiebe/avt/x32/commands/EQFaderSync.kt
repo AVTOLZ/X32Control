@@ -5,6 +5,7 @@ import dev.tiebe.avt.x32.api.fader.Eq
 import dev.tiebe.avt.x32.api.fader.Fader
 import dev.tiebe.avt.x32.biquad.BiQuadraticFilter
 import java.util.*
+import kotlin.math.pow
 
 class EQFaderSync(val osc: OSCController): Command {
     override var arguments: List<Any> = listOf()
@@ -56,19 +57,15 @@ class EQFaderSync(val osc: OSCController): Command {
 
         subscribeType(fader) { band, newType ->
             //bands[band - 1].type = newType
-            calculateY(400f, bands)
         }
         subscribeFreq(fader) { band, newFreq ->
             bands[band - 1].freq = newFreq
-            calculateY(400f, bands)
         }
         subscribeQ(fader) { band, newQ ->
             bands[band - 1].q = newQ
-            calculateY(400f, bands)
         }
         subscribeGain(fader) { band, newGain ->
             bands[band - 1].gain = newGain
-            calculateY(400f, bands)
         }
 
         Thread.sleep(2000)
@@ -116,39 +113,17 @@ class EQFaderSync(val osc: OSCController): Command {
         }
     }
 
-    private fun calculateY(calculateFreq: Float, currentEq: List<EQBand>) {
-        for (eq in currentEq) {
-            when (eq.type) {
-                //Eq.Companion.EQType.LCut -> calculateYLCut(calculateFreq, eq)
-                //Eq.Companion.EQType.LShv -> calculateYLShv(calculateFreq, eq)
-/*                Eq.Companion.EQType.PEQ -> calculateYPEQ(calculateFreq, eq)
-                Eq.Companion.EQType.VEQ -> calculateYVEQ(calculateFreq, eq)*/
-                else -> {}
-            }
 
+    data class EQBand(var type: BiQuadraticFilter.Companion.FilterType, var freq: Double, var gain: Double, var q: Double, val isVeq: Boolean = false) {
+        fun getBiquad(): BiQuadraticFilter {
+            val mappedFreq = 20.0 * (10.0).pow(3 * freq)
+            val mappenGain = -15.0 + gain * (15.0 - -15.0)
+            var mappedQ = 10 * (0.3 / 10.0).pow(q)
 
+            if (isVeq) mappedQ /= 2.3
+
+            return BiQuadraticFilter(type, mappedFreq, 44100.0, mappedQ, mappenGain)
         }
-    }
 
-    private fun calculateYLShv(calculateFreq: Float, lShv: EQBand): Double {
-        return 0.0
-    }
-
-
-    data class EQBand(var type: BiQuadraticFilter.Companion.FilterType, var freq: Double, var gain: Double, var q: Double) {
-/*        fun getBiquad(): BiquadFilter {
-            val frequency = 20.0 * (10.0).pow(3 * freq)
-            val gain = -15.0 + gain * (15.0 - -15.0)
-            val q = 10 * (0.3 / 10.0).pow(q)
-
-            return when (type) {
-                Eq.Companion.EQType.LCut -> TODO()
-                Eq.Companion.EQType.LShv -> BiquadLowShelfFilter(44100.0, frequency, gain, q)
-                Eq.Companion.EQType.PEQ -> return BiquadPeakFilter(44100.0, frequency, gain, q)
-                Eq.Companion.EQType.VEQ -> return BiquadPeakFilter(44100.0, frequency, gain, q/2.3)
-                Eq.Companion.EQType.HShv -> TODO()
-                Eq.Companion.EQType.HCut -> TODO()
-            }
-        }*/
     }
 }
