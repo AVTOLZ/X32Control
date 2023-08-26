@@ -3,15 +3,23 @@ package dev.tiebe.avt.x32.commands
 import dev.tiebe.avt.x32.OSCController
 import dev.tiebe.avt.x32.api.fader.Eq
 import dev.tiebe.avt.x32.api.fader.Fader
+import dev.tiebe.avt.x32.biquad.BiQuadraticFilter
 import java.util.*
 
 class EQFaderSync(val osc: OSCController): Command {
     override var arguments: List<Any> = listOf()
 
     //gain is van 0-1 (-15db-15db), freq is van 0-1 (20hz-20khz), q is van 0-1 (10-0.3 (nee, niet 0.3-10, 0 is 10, 1 is 0.3))
-    val testBands = listOf(EQBand(type = Eq.Companion.EQType.LShv, freq =0.245, gain =0.9, q =0.46478873), EQBand(
-        type = Eq.Companion.EQType.PEQ, freq =0.505, gain =0.9583333, q =0.1971831), EQBand(type = Eq.Companion.EQType.VEQ, freq =0.71, gain =0.0, q =0.0), EQBand(
-        type = Eq.Companion.EQType.HShv, freq =0.925, gain =0.85833335, q =0.46478873))
+    val testBands = listOf(
+        EQFaderSync.EQBand(type = BiQuadraticFilter.Companion.FilterType.LOWSHELF, freq = 0.245, gain = 0.9, q = 0.46478873),
+        EQFaderSync.EQBand(
+            type = BiQuadraticFilter.Companion.FilterType.PEAK, freq = 0.505, gain = 0.9583333, q = 0.1971831
+        ),
+        EQFaderSync.EQBand(type = BiQuadraticFilter.Companion.FilterType.PEAK, freq = 0.71, gain = 0.0, q = 0.0),
+        EQFaderSync.EQBand(
+            type = BiQuadraticFilter.Companion.FilterType.HIGHSHELF, freq = 0.925, gain = 0.85833335, q = 0.46478873
+        )
+    )
 
     companion object {
         const val updateFrequency = 30
@@ -44,10 +52,10 @@ class EQFaderSync(val osc: OSCController): Command {
     }
 
     private fun subscribeEQ(fader: Fader) {
-        val bands = MutableList(fader.eqAmount) { EQBand(Eq.Companion.EQType.LCut, 0.0, 0.0, 0.0) }
+        val bands = MutableList(fader.eqAmount) { EQBand(BiQuadraticFilter.Companion.FilterType.LOWPASS, 0.0, 0.0, 0.0) }
 
         subscribeType(fader) { band, newType ->
-            bands[band - 1].type = newType
+            //bands[band - 1].type = newType
             calculateY(400f, bands)
         }
         subscribeFreq(fader) { band, newFreq ->
@@ -112,7 +120,7 @@ class EQFaderSync(val osc: OSCController): Command {
         for (eq in currentEq) {
             when (eq.type) {
                 //Eq.Companion.EQType.LCut -> calculateYLCut(calculateFreq, eq)
-                Eq.Companion.EQType.LShv -> calculateYLShv(calculateFreq, eq)
+                //Eq.Companion.EQType.LShv -> calculateYLShv(calculateFreq, eq)
 /*                Eq.Companion.EQType.PEQ -> calculateYPEQ(calculateFreq, eq)
                 Eq.Companion.EQType.VEQ -> calculateYVEQ(calculateFreq, eq)*/
                 else -> {}
@@ -127,5 +135,20 @@ class EQFaderSync(val osc: OSCController): Command {
     }
 
 
-    data class EQBand(var type: Eq.Companion.EQType, var freq: Double, var gain: Double, var q: Double)
+    data class EQBand(var type: BiQuadraticFilter.Companion.FilterType, var freq: Double, var gain: Double, var q: Double) {
+/*        fun getBiquad(): BiquadFilter {
+            val frequency = 20.0 * (10.0).pow(3 * freq)
+            val gain = -15.0 + gain * (15.0 - -15.0)
+            val q = 10 * (0.3 / 10.0).pow(q)
+
+            return when (type) {
+                Eq.Companion.EQType.LCut -> TODO()
+                Eq.Companion.EQType.LShv -> BiquadLowShelfFilter(44100.0, frequency, gain, q)
+                Eq.Companion.EQType.PEQ -> return BiquadPeakFilter(44100.0, frequency, gain, q)
+                Eq.Companion.EQType.VEQ -> return BiquadPeakFilter(44100.0, frequency, gain, q/2.3)
+                Eq.Companion.EQType.HShv -> TODO()
+                Eq.Companion.EQType.HCut -> TODO()
+            }
+        }*/
+    }
 }

@@ -1,7 +1,6 @@
 package dev.tiebe.avt.x32.api.fader
 
 import com.illposed.osc.OSCMessage
-import kotlin.math.log10
 
 open class Eq(val fader: Fader) {
     open val mainMessage = "/${fader.classString}/${fader.idString}/eq"
@@ -62,6 +61,15 @@ open class Eq(val fader: Fader) {
             HShv(4),
             HCut(5)
         }
+
+/*        fun EQType.getBiquadFilter(sampleRate: Double, frequency: Double, gain: Double, q: Double): BiquadFilter = when (this) {
+                EQType.LCut -> TODO()
+                EQType.LShv -> TODO()
+                EQType.PEQ -> BiquadPeakFilter(sampleRate, frequency, gain, q)
+                EQType.VEQ -> BiquadPeakFilter(sampleRate, frequency, gain, q/2.3)
+                EQType.HShv -> TODO()
+                EQType.HCut -> TODO()
+            }*/
     }
 
 }
