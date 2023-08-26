@@ -85,10 +85,17 @@ class EQFaderSync(val osc: OSCController): Command {
     private val faders = List(16) { osc.getFaderFromIndex((it + 17).toString()).also { it.mix.setMute(true) } }
 
     private fun runCalculations(bands: List<EQBand>) {
-        val biquads = bands.map { it.getBiquad() }
+        val frequencies = List(faders.size) { index -> index.toDouble().mapToLin(0..15, 20.0..20000.0) }
+
+        //TODO: check nearest fader to every bands frequency, and calculate from there
+        val biquads = bands.map {
+            val frequency = findNearestValue(it.freq.toX32Frequency(), frequencies).fromX32Frequency()
+            println(frequency)
+            it.copy(freq = frequency).getBiquad()
+        }
 
         faders.forEachIndexed { index, fader ->
-            val freqAtFader = index.toDouble().mapToLin(0..15, 20.0..20000.0)
+            val freqAtFader = frequencies[index]
             var total = 0.0
 
             for (biquad in biquads) {
@@ -100,8 +107,6 @@ class EQFaderSync(val osc: OSCController): Command {
             var db = 20 * log10(total)
 
             if (db < -15) db = -15.0 else if (db > 15) db = 15.0
-            println("Fader $index: $db")
-
             val newValue = ((db / 15.0f) + 1) /2.0
 
             fader.mix.setLevel(newValue.toFloat())

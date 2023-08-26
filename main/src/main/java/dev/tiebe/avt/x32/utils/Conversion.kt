@@ -1,9 +1,6 @@
 package dev.tiebe.avt.x32.utils
 
-import kotlin.math.exp
-import kotlin.math.ln
-import kotlin.math.log10
-import kotlin.math.pow
+import kotlin.math.*
 
 fun Float.toDb(): Float = if (this >= 0.5) this * 40f - 30f
     else if (this >= 0.25) this * 80f - 50f
@@ -33,13 +30,29 @@ fun Double.toX32Frequency(): Double = 20.0 * (10.0).pow(3 * this)
 fun Double.toX32Q(): Double = 10 * (0.3 / 10.0).pow(this)
 fun Double.toX32Gain(): Double = -15.0 + this * (15.0 - -15.0)
 
-fun Double.fromX32Frequency(): Double = (this / 20.0).pow(1.0 / 3.0)
-fun Double.fromX32Q(): Double = (this / 10.0).pow(1.0 / 3.0)
-fun Double.fromX32Gain(): Double = (this + 15.0) / (15.0 - -15.0)
+fun Double.fromX32Frequency(): Double = log10(this / 20.0) / 3
+fun Double.fromX32Q(): Double = ln(this / 10) / ln(0.3 / 10.0)
+fun Double.fromX32Gain(): Double = (this + 15.0) / 30.0
 
 fun Double.mapToLin(fromRange: IntRange, toRange: ClosedFloatingPointRange<Double>): Double {
     val logMin = log10(toRange.start)
     val logMax = log10(toRange.endInclusive)
     val scale = (logMax - logMin) / (fromRange.last - fromRange.first)
     return 10.0.pow(logMin + scale * (this - fromRange.first))
+}
+
+fun findNearestValue(value: Double, list: List<Double>): Double {
+    println("Finding nearest value to $value in $list")
+    var min = Double.MAX_VALUE
+    var closest = value
+
+    for (v in list) {
+        val diff = abs(v - value)
+        if (diff < min) {
+            min = diff
+            closest = v
+        }
+    }
+
+    return closest
 }

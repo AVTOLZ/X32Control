@@ -136,7 +136,6 @@ class OSCController(ip: String, port: Int, localPort: Int, daemonThread: Boolean
                 override fun matches(messageEvent: OSCMessageEvent?): Boolean = true
             }
         ) { message ->
-            println(message.message.address)
             registeredCallbacks.iterator().forEach { it(message) }
         }
 
