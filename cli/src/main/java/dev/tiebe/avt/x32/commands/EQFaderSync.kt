@@ -2,7 +2,8 @@ package dev.tiebe.avt.x32.commands
 
 import dev.tiebe.avt.x32.OSCController
 import dev.tiebe.avt.x32.advancedTestBands
-import dev.tiebe.avt.x32.api.fader.Eq
+import dev.tiebe.avt.x32.api.fader.*
+import dev.tiebe.avt.x32.api.fader.Color
 import dev.tiebe.avt.x32.api.fader.Eq.Companion.getFilterType
 import dev.tiebe.avt.x32.api.fader.Fader
 import dev.tiebe.avt.x32.api.getFaderFromIndex
@@ -20,27 +21,31 @@ class EQFaderSync(val osc: OSCController): Command {
     companion object {
         const val updateFrequency = 30
 
-        var synced = false
+        var savedFaderSettings: List<FaderSettings> = listOf()
         val subscriptions = mutableListOf<UUID>()
     }
     override fun setArguments(args: List<String>): Command? {
-        if (args.size == 2) {
+        return if (args.size == 2) {
             arguments = listOf(args[1].toBoolean())
-            return this
+            this
         } else {
-            return null
+            null
         }
     }
 
-    private val faders = List(16) { osc.getFaderFromIndex((it + 17).toString()).also { it.mix.setMute(true) } }
+    private val faders = List(16) { osc.getFaderFromIndex((it + 17).toString()) }
     private val frequencies = List(faders.size) { index -> index.toDouble().mapToLin(0..15, 20.0..20000.0) }
 
-    var bands: List<EQBand> = listOf()
+    private var bands: List<EQBand> = listOf()
 
     override fun run() {
         if (arguments[0] as Boolean) {
             runBlocking {
                 val fader = osc.getStatus().getSelection()
+
+                savedFaderSettings = List(16) { FaderSettings.fromFader(osc.getFaderFromIndex((it + 17).toString())) }
+                changeFaderSettings()
+
                 subscribeEQ(fader)
                 subscribeSolo(fader)
                 subscribeFaders(fader)
@@ -49,10 +54,28 @@ class EQFaderSync(val osc: OSCController): Command {
             for (sub in subscriptions) {
                 osc.unsubscribe(sub)
             }
+
+            for (i in 0..15) {
+                savedFaderSettings[i].applyTo(osc.getFaderFromIndex((i + 17).toString()))
+            }
         }
     }
 
-    var selectedBand = -1
+    private fun changeFaderSettings() {
+        faders.forEachIndexed { index, fader ->
+            fader.mix.setMute(true)
+            fader.config.setSolo(false)
+            fader.config.setSource(43) //fx, almost always unused. cant be off, otherwise the led wont be on
+            fader.mix.setStereo(false)
+            fader.mix.setMono(false)
+
+            fader.config.setColor(Color.CYAN, false)
+            fader.config.setName(frequencies[index].toInt().toString())
+            fader.config.setIcon(Icon.BLANK)
+        }
+    }
+
+    private var selectedBand = -1
 
     private fun subscribeSolo(fader: Fader) {
         val soloFaders = List(fader.eqAmount) { faders[it] }
@@ -63,12 +86,12 @@ class EQFaderSync(val osc: OSCController): Command {
                 osc.subscribe("/-stat/solosw/${soloFader.idString}", updateFrequency) { message ->
                     val solo = message.message.arguments[0] as Int
                     if (solo == 1) {
-                        //Todo: maybe make this solo also false (so it doesn't interfere with actual solos, and invert the color of the led)
                         for (otherSoloFader in soloFaders) {
-                            if (otherSoloFader != soloFader) {
-                                otherSoloFader.config.setSolo(false)
-                            }
+                            otherSoloFader.config.setSolo(false)
+                            otherSoloFader.config.setColor(Color.CYAN, false)
                         }
+
+                        soloFader.config.setColor(Color.CYAN, true)
 
                         println("Soloing band ${soloFaders.indexOf(soloFader) + 1}")
                         selectedBand = soloFaders.indexOf(soloFader) + 1

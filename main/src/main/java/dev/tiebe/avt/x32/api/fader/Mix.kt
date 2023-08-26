@@ -19,6 +19,10 @@ class Mix(val fader: Fader) {
         osc.sendMessage(OSCMessage("/${fader.classString}/$idString/mix/on", listOf(if (mute) 0 else 1)))
     }
 
+    suspend fun getLevel(): Float {
+        return (osc.getValue(OSCMessage(levelOSCCommand))?.arguments?.get(0) as Float)
+    }
+
     fun setLevel(level: Float) {
         if (level < 0 || level > 1)
             throw IllegalArgumentException("Level must be between 0 and 1")
@@ -27,8 +31,16 @@ class Mix(val fader: Fader) {
         osc.sendMessage(OSCMessage(levelOSCCommand, listOf(x32Value)))
     }
 
+    suspend fun getStereo(): Boolean {
+        return osc.getValue(OSCMessage("/${fader.classString}/$idString/mix/st"))?.arguments?.get(0) == 1
+    }
+
     fun setStereo(state: Boolean) {
         osc.sendMessage(OSCMessage("/${fader.classString}/$idString/mix/st", listOf(if (state) 1 else 0)))
+    }
+
+    suspend fun getMono(): Boolean {
+        return osc.getValue(OSCMessage("/${fader.classString}/$idString/mix/mono"))?.arguments?.get(0) == 1
     }
 
     fun setMono(state: Boolean) {

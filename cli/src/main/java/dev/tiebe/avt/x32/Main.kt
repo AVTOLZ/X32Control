@@ -7,6 +7,7 @@ import kotlinx.coroutines.runBlocking
 
 // User variables
 const val IP = "192.168.122.209"
+const val TESTING_SERVER = true
 
 fun main(args: Array<String>) {
     var localPort = 10024
@@ -17,6 +18,13 @@ fun main(args: Array<String>) {
 
     val osc = OSCController(IP, 10023, localPort)
     osc.connect()
+
+    if (TESTING_SERVER) Thread {
+        while (true) {
+            osc.sendMessage(OSCMessage("/xremote"))
+            Thread.sleep(5000)
+        }
+    }.start()
 
     val channels = mutableListOf<Channel>()
     for(i in 1..32) {

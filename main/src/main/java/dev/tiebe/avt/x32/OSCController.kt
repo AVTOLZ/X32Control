@@ -28,7 +28,7 @@ class OSCController(ip: String, port: Int, localPort: Int, daemonThread: Boolean
             val message = runBlocking { queue.receive() }
             client.send(message)
 
-            Thread.sleep(10)
+            Thread.sleep(5)
         }
     }.also { it.start() }
 
@@ -59,14 +59,12 @@ class OSCController(ip: String, port: Int, localPort: Int, daemonThread: Boolean
             while (true) {
                 try {
                     if (Thread.interrupted()) {
-                        println("INTERRUPTED")
                         sendMessage(OSCMessage("/unsubscribe", listOf(address)))
                         return@Thread
                     }
-                    Thread.sleep(3500)
+                    Thread.sleep(7000)
                     sendMessage(OSCMessage("/renew", listOf(address)))
                 } catch (e: InterruptedException) {
-                    println("INTERRUPTED")
                     sendMessage(OSCMessage("/unsubscribe", listOf(address)))
                     return@Thread
                 }
