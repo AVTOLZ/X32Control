@@ -4,6 +4,7 @@ import dev.tiebe.avt.x32.OSCController
 import dev.tiebe.avt.x32.api.fader.*
 import dev.tiebe.avt.x32.api.fader.Color
 import dev.tiebe.avt.x32.api.fader.Eq.Companion.getFilterType
+import dev.tiebe.avt.x32.api.fader.Eq.Companion.getFilterValue
 import dev.tiebe.avt.x32.api.fader.Fader
 import dev.tiebe.avt.x32.api.getBus
 import dev.tiebe.avt.x32.api.getChannel
@@ -15,6 +16,7 @@ import kotlinx.coroutines.runBlocking
 import java.util.*
 import kotlin.math.log10
 import kotlin.math.pow
+import kotlin.math.round
 
 class EQFaderSync(val osc: OSCController): Command {
     override var arguments: List<Any> = listOf()
@@ -22,15 +24,16 @@ class EQFaderSync(val osc: OSCController): Command {
     companion object {
         const val updateFrequency = 30
 
-        @Volatile var savedFaderSettings: Map<Fader, FaderSettings> = mapOf()
+        @Volatile var savedFaderSettings: MutableMap<Fader, FaderSettings> = mutableMapOf()
         @Volatile var savedFaderBankState: Pair<Status.Companion.ChannelFaderBank, Status.Companion.GroupFaderBank>? = null
         val subscriptions = mutableListOf<UUID>()
     }
     override fun setArguments(args: List<String>): Command? {
-        return if (args.size == 2) {
-            arguments = listOf(args[1].toBoolean())
+        return if (args.size == 2 && args[1].toBooleanStrictOrNull() != null) {
+            arguments = listOf(args[1].toBooleanStrict())
             this
         } else {
+            arguments = listOf(subscriptions.isEmpty())
             null
         }
     }
@@ -47,7 +50,7 @@ class EQFaderSync(val osc: OSCController): Command {
             runBlocking {
                 val fader = osc.getStatus().getSelection()
 
-                savedFaderSettings = faders.keys.associateWith { FaderSettings.fromFader(it) } + settingsFaders.associateWith { FaderSettings.fromFader(it) }
+                savedFaderSettings = (faders.keys.associateWith { FaderSettings.fromFader(it) } + settingsFaders.associateWith { FaderSettings.fromFader(it) }).toMutableMap()
                 changeFaderSettings()
 
                 val channelFaderBank = osc.getStatus().getChannelFaderBank()
@@ -92,6 +95,10 @@ class EQFaderSync(val osc: OSCController): Command {
             if (savedFaderBankState == null) return
             osc.getStatus().setChannelFaderBank(savedFaderBankState!!.first)
             osc.getStatus().setGroupFaderBank(savedFaderBankState!!.second)
+
+            subscriptions.clear()
+            savedFaderSettings.clear()
+            savedFaderBankState = null
         }
     }
 
@@ -131,8 +138,7 @@ class EQFaderSync(val osc: OSCController): Command {
                     bus.config.setName("Gain")
                 }
                 3 -> {
-                    bus.config.setName("")
-                    bus.config.setColor(Color.OFF)
+                    bus.config.setName("Type")
                 }
             }
         }
@@ -154,21 +160,35 @@ class EQFaderSync(val osc: OSCController): Command {
                         0 -> {
                             bands[selectedBand - 1].q = level.toDouble()
                             fader.eq.setQ(selectedBand, level)
+                            runCalculations(bands)
                         }
                         1 -> {
                             bands[selectedBand - 1].freq = level.toDouble()
                             fader.eq.setFrequency(selectedBand, level)
+                            runCalculations(bands)
                         }
                         2 -> {
                             bands[selectedBand - 1].gain = level.toDouble()
                             fader.eq.setGain(selectedBand, level)
+                            runCalculations(bands)
+                        }
+                        3 -> {
+                            val newType = getFilterType(round(level * 5).toInt())
+                            bands[selectedBand - 1].type = newType
+                            fader.eq.setType(selectedBand, newType)
+
+                            bus.config.setName(newType.toString())
                         }
                     }
 
-                    runCalculations(bands)
-
                     Thread {
                         Thread.sleep(505)
+                        if (index == 3) {
+                            if ((settingsChangingFader.first == bus && System.currentTimeMillis() - settingsChangingFader.second > 500) || settingsChangingFader.first != bus) {
+                                bus.mix.setLevel(getFilterValue(bands[selectedBand - 1].type) / 5f)
+                            }
+                        }
+
                         if (settingsChangingFader.first == bus && System.currentTimeMillis() - settingsChangingFader.second > 500) {
                             runCalculations(bands)
                         }
@@ -189,6 +209,7 @@ class EQFaderSync(val osc: OSCController): Command {
                     val solo = message.message.arguments[0] as Int
                     if (solo == 1) {
                         for (otherSoloFader in soloFaders) {
+                            if (otherSoloFader == soloFader) continue
                             otherSoloFader.config.setSolo(false)
                             otherSoloFader.config.setColor(Color.CYAN, false)
                         }
@@ -201,6 +222,29 @@ class EQFaderSync(val osc: OSCController): Command {
                         settingsFaders[0].mix.setLevel(bands[selectedBand - 1].q.toFloat())
                         settingsFaders[1].mix.setLevel(bands[selectedBand - 1].freq.toFloat())
                         settingsFaders[2].mix.setLevel(bands[selectedBand - 1].gain.toFloat())
+                        settingsFaders[3].mix.setLevel(getFilterValue(bands[selectedBand - 1].type) / 5f)
+
+                        settingsFaders[0].config.setName(String.format("%.2f", bands[selectedBand - 1].q.toX32Q()))
+                        settingsFaders[1].config.setName(String.format("%.2f", bands[selectedBand - 1].freq.toX32Frequency()))
+                        settingsFaders[2].config.setName(String.format("%.2f", bands[selectedBand - 1].gain.toX32Gain()))
+                        settingsFaders[3].config.setName(bands[selectedBand - 1].type.toString())
+
+                    } else {
+                        if (selectedBand == soloFaders.indexOf(soloFader) + 1) {
+                            soloFader.config.setColor(Color.CYAN, false)
+
+                            settingsFaders[0].mix.setLevel(0.0f)
+                            settingsFaders[1].mix.setLevel(0.0f)
+                            settingsFaders[2].mix.setLevel(0.0f)
+                            settingsFaders[3].mix.setLevel(0.0f)
+
+                            settingsFaders[0].config.setName("Q")
+                            settingsFaders[1].config.setName("Frequency")
+                            settingsFaders[2].config.setName("Gain")
+                            settingsFaders[3].config.setName("Type")
+
+                            selectedBand = -1
+                        }
                     }
                 }
             )
@@ -301,16 +345,37 @@ class EQFaderSync(val osc: OSCController): Command {
             fader.mix.setLevel(newValue.toFloat())
         }
 
-        if (selectedBand == -1) return
+        if (selectedBand == -1) {
+            settingsFaders[0].mix.setLevel(0.0f)
+            settingsFaders[1].mix.setLevel(0.0f)
+            settingsFaders[2].mix.setLevel(0.0f)
+            settingsFaders[3].mix.setLevel(0.0f)
+
+            settingsFaders[0].config.setName("Q")
+            settingsFaders[1].config.setName("Frequency")
+            settingsFaders[2].config.setName("Gain")
+            settingsFaders[3].config.setName("Type")
+
+            return
+        }
         settingsFaders.forEachIndexed { index, bus ->
             if (settingsChangingFader.first == bus && System.currentTimeMillis() - settingsChangingFader.second < 500) return@forEachIndexed
             if (index == 3) return@forEachIndexed
             val eqband = bands[selectedBand - 1]
 
             when (index) {
-                0 -> bus.mix.setLevel(eqband.q.toFloat())
-                1 -> bus.mix.setLevel(eqband.freq.toFloat())
-                2 -> bus.mix.setLevel(eqband.gain.toFloat())
+                0 -> {
+                    bus.mix.setLevel(eqband.q.toFloat())
+                    bus.config.setName(String.format("%.2f", eqband.q.toX32Q()))
+                }
+                1 -> {
+                    bus.mix.setLevel(eqband.freq.toFloat())
+                    bus.config.setName(String.format("%.2f", eqband.freq.toX32Frequency()))
+                }
+                2 -> {
+                    bus.mix.setLevel(eqband.gain.toFloat())
+                    bus.config.setName(String.format("%.2f", eqband.gain.toX32Gain()))
+                }
             }
         }
     }

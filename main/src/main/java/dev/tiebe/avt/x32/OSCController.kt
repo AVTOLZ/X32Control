@@ -90,8 +90,9 @@ class OSCController(ip: String, port: Int, localPort: Int, daemonThread: Boolean
     }
 
 
-    fun sendMessage(message: OSCMessage) {
-        runBlocking {
+    fun sendMessage(message: OSCMessage, force: Boolean = false) {
+        if (force) forceSend(message)
+        else runBlocking {
             queue.send(message)
         }
     }
@@ -101,7 +102,6 @@ class OSCController(ip: String, port: Int, localPort: Int, daemonThread: Boolean
         while (!queue.isEmpty) { Thread.sleep(50) }
 
         client.send(message)
-        println("Sent message: $message")
         Thread.sleep(10)
     }
 

@@ -98,12 +98,12 @@ open class Eq(val fader: Fader) {
 
         fun getFilterValue(filter: BiQuadraticFilter.Companion.FilterType): Int {
             return when (filter) {
-                BiQuadraticFilter.Companion.FilterType.LOWPASS -> 0
+                BiQuadraticFilter.Companion.FilterType.HIGHPASS -> 0
                 BiQuadraticFilter.Companion.FilterType.LOWSHELF -> 1
                 BiQuadraticFilter.Companion.FilterType.PEAK -> 2
                 BiQuadraticFilter.Companion.FilterType.VEQ -> 3
                 BiQuadraticFilter.Companion.FilterType.HIGHSHELF -> 4
-                BiQuadraticFilter.Companion.FilterType.HIGHPASS -> 5
+                BiQuadraticFilter.Companion.FilterType.LOWPASS -> 5
                 BiQuadraticFilter.Companion.FilterType.BANDPASS -> TODO()
                 BiQuadraticFilter.Companion.FilterType.NOTCH -> TODO()
             }

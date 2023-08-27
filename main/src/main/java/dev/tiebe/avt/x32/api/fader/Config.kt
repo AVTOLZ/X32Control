@@ -22,7 +22,7 @@ class Config(val fader: Fader) {
 
     fun setName(name: String, force: Boolean = false) {
         if (name.length > 12)
-            throw IllegalArgumentException("Name must be 12 characters or less")
+            throw IllegalArgumentException("$name: name must be 12 characters or less")
 
         if (force) osc.forceSend(OSCMessage("/${fader.classString}/$idString/config/name", listOf(name)))
         else osc.sendMessage(OSCMessage("/${fader.classString}/$idString/config/name", listOf(name)))
