@@ -35,7 +35,7 @@ class EQFaderSync(val osc: OSCController): Command {
         }
     }
 
-    private val faders = List(16) { osc.getChannel(it + 17) }
+    private val faders = List(16) { osc.getChannel(it + 17) }.associateWith { -0.1 }
     private val frequencies = List(faders.size) { index -> index.toDouble().mapToLin(0..15, 20.0..20000.0) }
 
     private val settingsFaders = List(4) { osc.getBus(9 + it) }
@@ -47,7 +47,7 @@ class EQFaderSync(val osc: OSCController): Command {
             runBlocking {
                 val fader = osc.getStatus().getSelection()
 
-                savedFaderSettings = faders.associateWith { FaderSettings.fromFader(it) } + settingsFaders.associateWith { FaderSettings.fromFader(it) }
+                savedFaderSettings = faders.keys.associateWith { FaderSettings.fromFader(it) } + settingsFaders.associateWith { FaderSettings.fromFader(it) }
                 changeFaderSettings()
 
                 val channelFaderBank = osc.getStatus().getChannelFaderBank()
@@ -96,12 +96,13 @@ class EQFaderSync(val osc: OSCController): Command {
     }
 
     private fun changeFaderSettings() {
-        faders.forEachIndexed { index, fader ->
+        faders.keys.forEachIndexed { index, fader ->
             fader.mix.setMute(true)
             fader.config.setSolo(false)
             fader.config.setSource(43) //fx, almost always unused. cant be off, otherwise the led wont be on
             fader.mix.setStereo(false)
             fader.mix.setMono(false)
+            fader.mix.setLevel(0.0f)
 
             fader.config.setColor(Color.CYAN, false)
             fader.config.setName(frequencies[index].toInt().toString())
@@ -114,6 +115,7 @@ class EQFaderSync(val osc: OSCController): Command {
             bus.config.setSource(43) //fx, almost always unused. cant be off, otherwise the led wont be on
             bus.mix.setStereo(false)
             bus.mix.setMono(false)
+            bus.mix.setLevel(0.0f)
 
             bus.config.setColor(Color.MAGENTA, false)
             bus.config.setIcon(Icon.BLANK)
@@ -163,6 +165,8 @@ class EQFaderSync(val osc: OSCController): Command {
                         }
                     }
 
+                    runCalculations(bands)
+
                     Thread {
                         Thread.sleep(505)
                         if (settingsChangingFader.first == bus && System.currentTimeMillis() - settingsChangingFader.second > 500) {
@@ -177,7 +181,7 @@ class EQFaderSync(val osc: OSCController): Command {
     private var selectedBand = -1
 
     private fun subscribeSolo(fader: Fader) {
-        val soloFaders = List(fader.eqAmount) { faders[it] }
+        val soloFaders = List(fader.eqAmount) { faders.keys.toList()[it] }
 
         for (soloFader in soloFaders) {
             subscriptions.add(
@@ -205,7 +209,7 @@ class EQFaderSync(val osc: OSCController): Command {
 
     @Volatile var changingFader: Pair<Fader?, Long> = null to 0
     private fun subscribeFaders(fader: Fader) {
-        faders.forEachIndexed { index, eqFader ->
+        faders.keys.forEachIndexed { index, eqFader ->
             subscriptions.add(
                 osc.subscribe(eqFader.mix.levelOSCCommand, updateFrequency) { message ->
                     val level = message.message.arguments[0] as Float
@@ -219,6 +223,8 @@ class EQFaderSync(val osc: OSCController): Command {
 
                     fader.eq.setFrequency(selectedBand, frequencies[index].fromX32Frequency().toFloat())
                     fader.eq.setGain(selectedBand, level)
+
+                    runCalculations(bands)
 
                     Thread {
                         Thread.sleep(505)
@@ -274,7 +280,7 @@ class EQFaderSync(val osc: OSCController): Command {
             it.copy(freq = frequency).getBiquad()
         }
 
-        faders.forEachIndexed { index, fader ->
+        faders.entries.forEachIndexed { index, (fader, currentValue) ->
             if (changingFader.first == fader && System.currentTimeMillis() - changingFader.second < 500) return@forEachIndexed
 
             val freqAtFader = frequencies[index]
@@ -291,6 +297,7 @@ class EQFaderSync(val osc: OSCController): Command {
             if (db < -15) db = -15.0 else if (db > 15) db = 15.0
             val newValue = ((db / 15.0f) + 1) /2.0
 
+            if (currentValue == newValue) return@forEachIndexed
             fader.mix.setLevel(newValue.toFloat())
         }
 
