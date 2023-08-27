@@ -1,12 +1,12 @@
 package dev.tiebe.avt.x32.commands
 
 import dev.tiebe.avt.x32.OSCController
-import dev.tiebe.avt.x32.advancedTestBands
 import dev.tiebe.avt.x32.api.fader.*
 import dev.tiebe.avt.x32.api.fader.Color
 import dev.tiebe.avt.x32.api.fader.Eq.Companion.getFilterType
 import dev.tiebe.avt.x32.api.fader.Fader
-import dev.tiebe.avt.x32.api.getFaderFromIndex
+import dev.tiebe.avt.x32.api.getBus
+import dev.tiebe.avt.x32.api.getChannel
 import dev.tiebe.avt.x32.api.getStatus
 import dev.tiebe.avt.x32.api.internal.Status
 import dev.tiebe.avt.x32.biquad.BiQuadraticFilter
@@ -22,7 +22,8 @@ class EQFaderSync(val osc: OSCController): Command {
     companion object {
         const val updateFrequency = 30
 
-        var savedFaderSettings: List<FaderSettings> = listOf()
+        @Volatile var savedFaderSettings: Map<Fader, FaderSettings> = mapOf()
+        @Volatile var savedFaderBankState: Pair<Status.Companion.ChannelFaderBank, Status.Companion.GroupFaderBank>? = null
         val subscriptions = mutableListOf<UUID>()
     }
     override fun setArguments(args: List<String>): Command? {
@@ -34,8 +35,10 @@ class EQFaderSync(val osc: OSCController): Command {
         }
     }
 
-    private val faders = List(16) { osc.getFaderFromIndex((it + 17).toString()) }
+    private val faders = List(16) { osc.getChannel(it + 17) }
     private val frequencies = List(faders.size) { index -> index.toDouble().mapToLin(0..15, 20.0..20000.0) }
+
+    private val settingsFaders = List(4) { osc.getBus(9 + it) }
 
     private var bands: List<EQBand> = listOf()
 
@@ -44,23 +47,51 @@ class EQFaderSync(val osc: OSCController): Command {
             runBlocking {
                 val fader = osc.getStatus().getSelection()
 
-                savedFaderSettings = List(16) { FaderSettings.fromFader(osc.getFaderFromIndex((it + 17).toString())) }
+                savedFaderSettings = faders.associateWith { FaderSettings.fromFader(it) } + settingsFaders.associateWith { FaderSettings.fromFader(it) }
                 changeFaderSettings()
 
+                val channelFaderBank = osc.getStatus().getChannelFaderBank()
+                val groupFaderBank = osc.getStatus().getGroupFaderBank()
+
+                savedFaderBankState = channelFaderBank to groupFaderBank
+
                 osc.getStatus().setChannelFaderBank(Status.Companion.ChannelFaderBank.CH17_32)
+                osc.getStatus().setGroupFaderBank(Status.Companion.GroupFaderBank.BUS9_16)
 
                 subscribeEQ(fader)
                 subscribeSolo(fader)
+                subscribeSettings(fader)
+
                 subscribeFaders(fader)
+
+                Runtime.getRuntime().addShutdownHook(Thread {
+                    for (sub in subscriptions) {
+                        osc.unsubscribe(sub)
+                    }
+
+                    println("Restoring settings..")
+                    savedFaderSettings.forEach {
+                        it.value.forceApplyTo(it.key)
+                    }
+
+                    if (savedFaderBankState == null) return@Thread
+
+                    osc.getStatus().setChannelFaderBank(savedFaderBankState!!.first)
+                    osc.getStatus().setGroupFaderBank(savedFaderBankState!!.second)
+                })
             }
         } else {
             for (sub in subscriptions) {
                 osc.unsubscribe(sub)
             }
 
-            for (i in 0..15) {
-                savedFaderSettings[i].applyTo(osc.getFaderFromIndex((i + 17).toString()))
+            savedFaderSettings.forEach {
+                it.value.applyTo(it.key)
             }
+
+            if (savedFaderBankState == null) return
+            osc.getStatus().setChannelFaderBank(savedFaderBankState!!.first)
+            osc.getStatus().setGroupFaderBank(savedFaderBankState!!.second)
         }
     }
 
@@ -76,13 +107,77 @@ class EQFaderSync(val osc: OSCController): Command {
             fader.config.setName(frequencies[index].toInt().toString())
             fader.config.setIcon(Icon.BLANK)
         }
+
+        settingsFaders.forEachIndexed { index, bus ->
+            bus.mix.setMute(true)
+            bus.config.setSolo(false)
+            bus.config.setSource(43) //fx, almost always unused. cant be off, otherwise the led wont be on
+            bus.mix.setStereo(false)
+            bus.mix.setMono(false)
+
+            bus.config.setColor(Color.MAGENTA, false)
+            bus.config.setIcon(Icon.BLANK)
+
+            when (index) {
+                0 -> {
+                    bus.config.setName("Q")
+                }
+                1 -> {
+                    bus.config.setName("Frequency")
+                }
+                2 -> {
+                    bus.config.setName("Gain")
+                }
+                3 -> {
+                    bus.config.setName("")
+                    bus.config.setColor(Color.OFF)
+                }
+            }
+        }
+    }
+
+    @Volatile private var settingsChangingFader: Pair<Fader?, Long> = null to 0
+
+    private fun subscribeSettings(fader: Fader) {
+        settingsFaders.forEachIndexed { index, bus ->
+            subscriptions.add(
+                osc.subscribe(bus.mix.levelOSCCommand, updateFrequency) { message ->
+                    val level = message.message.arguments[0] as Float
+
+                    if (selectedBand == -1) return@subscribe
+
+                    settingsChangingFader = bus to System.currentTimeMillis()
+
+                    when (index) {
+                        0 -> {
+                            bands[selectedBand - 1].q = level.toDouble()
+                            fader.eq.setQ(selectedBand, level)
+                        }
+                        1 -> {
+                            bands[selectedBand - 1].freq = level.toDouble()
+                            fader.eq.setFrequency(selectedBand, level)
+                        }
+                        2 -> {
+                            bands[selectedBand - 1].gain = level.toDouble()
+                            fader.eq.setGain(selectedBand, level)
+                        }
+                    }
+
+                    Thread {
+                        Thread.sleep(505)
+                        if (settingsChangingFader.first == bus && System.currentTimeMillis() - settingsChangingFader.second > 500) {
+                            runCalculations(bands)
+                        }
+                    }.start()
+                }
+            )
+        }
     }
 
     private var selectedBand = -1
 
     private fun subscribeSolo(fader: Fader) {
         val soloFaders = List(fader.eqAmount) { faders[it] }
-        println(faders[0].idString)
 
         for (soloFader in soloFaders) {
             subscriptions.add(
@@ -98,6 +193,10 @@ class EQFaderSync(val osc: OSCController): Command {
 
                         println("Soloing band ${soloFaders.indexOf(soloFader) + 1}")
                         selectedBand = soloFaders.indexOf(soloFader) + 1
+
+                        settingsFaders[0].mix.setLevel(bands[selectedBand - 1].q.toFloat())
+                        settingsFaders[1].mix.setLevel(bands[selectedBand - 1].freq.toFloat())
+                        settingsFaders[2].mix.setLevel(bands[selectedBand - 1].gain.toFloat())
                     }
                 }
             )
@@ -172,7 +271,6 @@ class EQFaderSync(val osc: OSCController): Command {
     private fun runCalculations(bands: List<EQBand>) {
         val biquads = bands.map {
             val frequency = findNearestValue(it.freq.toX32Frequency(), frequencies).fromX32Frequency()
-            println(frequency)
             it.copy(freq = frequency).getBiquad()
         }
 
@@ -194,6 +292,19 @@ class EQFaderSync(val osc: OSCController): Command {
             val newValue = ((db / 15.0f) + 1) /2.0
 
             fader.mix.setLevel(newValue.toFloat())
+        }
+
+        if (selectedBand == -1) return
+        settingsFaders.forEachIndexed { index, bus ->
+            if (settingsChangingFader.first == bus && System.currentTimeMillis() - settingsChangingFader.second < 500) return@forEachIndexed
+            if (index == 3) return@forEachIndexed
+            val eqband = bands[selectedBand - 1]
+
+            when (index) {
+                0 -> bus.mix.setLevel(eqband.q.toFloat())
+                1 -> bus.mix.setLevel(eqband.freq.toFloat())
+                2 -> bus.mix.setLevel(eqband.gain.toFloat())
+            }
         }
     }
 

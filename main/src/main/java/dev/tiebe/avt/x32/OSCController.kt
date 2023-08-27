@@ -4,8 +4,10 @@ import com.illposed.osc.*
 import com.illposed.osc.transport.OSCPort
 import com.illposed.osc.transport.OSCPortIn
 import com.illposed.osc.transport.OSCPortOut
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.consume
+import kotlinx.coroutines.channels.trySendBlocking
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
@@ -21,7 +23,7 @@ class OSCController(ip: String, port: Int, localPort: Int, daemonThread: Boolean
     private val client = OSCPortOut(OSCSerializerAndParserBuilder(), remote, InetSocketAddress(OSCPort.generateWildcard(remote), localPort))
     private val server = OSCPortIn(localPort).apply { isDaemonListener = daemonThread }
 
-    val queue = Channel<OSCMessage>(Channel.UNLIMITED)
+    val queue = Channel<OSCPacket>(Channel.UNLIMITED)
 
     val queueThread = Thread {
         while (true) {
@@ -91,6 +93,21 @@ class OSCController(ip: String, port: Int, localPort: Int, daemonThread: Boolean
     fun sendMessage(message: OSCMessage) {
         runBlocking {
             queue.send(message)
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun forceSend(message: OSCMessage) {
+        while (!queue.isEmpty) { Thread.sleep(50) }
+
+        client.send(message)
+        println("Sent message: $message")
+        Thread.sleep(10)
+    }
+
+    fun sendBundle(bundle: OSCBundle) {
+        runBlocking {
+            queue.send(bundle)
         }
     }
 

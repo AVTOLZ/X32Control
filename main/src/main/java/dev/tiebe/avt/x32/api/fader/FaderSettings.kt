@@ -1,5 +1,8 @@
 package dev.tiebe.avt.x32.api.fader
 
+import com.illposed.osc.OSCMessage
+import dev.tiebe.avt.x32.api.channelIndex
+import dev.tiebe.avt.x32.api.fader.channel.Channel
 import kotlinx.coroutines.runBlocking
 
 data class FaderSettings(
@@ -10,7 +13,7 @@ data class FaderSettings(
     val monoState: Boolean,
     val color: Pair<Color, Boolean>,
     val name: String,
-    val source: Int,
+    val source: Int?,
     val icon: Icon,
 ) {
     companion object {
@@ -24,7 +27,7 @@ data class FaderSettings(
                     fader.mix.getMono(),
                     fader.config.getColor(),
                     fader.config.getName(),
-                    fader.config.getSource(),
+                    if (fader is Channel) fader.config.getSource() else null,
                     fader.config.getIcon()
                 )
             }
@@ -32,16 +35,26 @@ data class FaderSettings(
     }
 
     fun applyTo(fader: Fader) {
-        runBlocking {
-            fader.mix.setLevel(gain)
-            fader.mix.setMute(muteState)
-            fader.config.setSolo(soloState)
-            fader.mix.setStereo(stereoState)
-            fader.mix.setMono(monoState)
-            fader.config.setColor(color.first, color.second)
-            fader.config.setName(name)
-            fader.config.setSource(source)
-            fader.config.setIcon(icon)
-        }
+        fader.mix.setLevel(gain)
+        fader.mix.setMute(muteState)
+        fader.config.setSolo(soloState)
+        fader.mix.setStereo(stereoState)
+        fader.mix.setMono(monoState)
+        fader.config.setColor(color.first, color.second)
+        fader.config.setName(name)
+        if (fader is Channel && source != null) fader.config.setSource(source)
+        fader.config.setIcon(icon)
+    }
+
+    fun forceApplyTo(fader: Fader) {
+        fader.mix.setLevel(gain, true)
+        fader.mix.setMute(muteState, true)
+        fader.config.setSolo(soloState, true)
+        fader.mix.setStereo(stereoState, true)
+        fader.mix.setMono(monoState, true)
+        fader.config.setColor(color.first, color.second, true)
+        fader.config.setName(name, true)
+        if (fader is Channel && source != null) fader.config.setSource(source, true)
+        fader.config.setIcon(icon, true)
     }
 }

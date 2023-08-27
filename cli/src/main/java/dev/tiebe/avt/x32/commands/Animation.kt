@@ -1,5 +1,7 @@
 package dev.tiebe.avt.x32.commands
 
+import com.illposed.osc.OSCBundle
+import com.illposed.osc.OSCMessage
 import dev.tiebe.avt.x32.OSCController
 import dev.tiebe.avt.x32.api.getChannel
 import dev.tiebe.avt.x32.api.getDCA
@@ -42,9 +44,13 @@ class Animation(private val osc: OSCController): Command {
         var t = 0.0
         while (true) {
             t += 0.05
+            //TODO: test if X32 support this
+            val packets = mutableListOf<OSCMessage>()
             channels.forEachIndexed { index, channel ->
-                channel.mix.setLevel((0.5 * sin(t + 0.3 * index) + 0.5).toFloat())
+                packets.add(OSCMessage(channel.mix.levelOSCCommand, listOf((0.5 * sin(t + 0.3 * index) + 0.5).toFloat())))
             }
+
+            osc.sendBundle(OSCBundle(packets.toList()))
             Thread.sleep(20)
         }
     }

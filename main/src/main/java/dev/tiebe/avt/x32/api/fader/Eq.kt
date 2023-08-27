@@ -58,14 +58,12 @@ open class Eq(val fader: Fader) {
     }
 
     fun setGain(band: Int, gain: Float) {
-        if (gain < -15 || gain > 15)
-            throw IllegalArgumentException("Gain must be between -15 and 15 dB")
+        if (gain < 0 || gain > 1)
+            throw IllegalArgumentException("Gain must be between 0 and 1")
         else if (band < 1 || band > fader.eqAmount)
             throw IllegalArgumentException("Band must be between 1 and ${fader.eqAmount}")
 
-        val x32Gain = (gain * 4).toInt() / 4f
-
-        fader.oscController.sendMessage(OSCMessage(gainOSCMessage.format(band), listOf(x32Gain)))
+        fader.oscController.sendMessage(OSCMessage(gainOSCMessage.format(band), listOf(gain)))
     }
 
     suspend fun getQ(band: Int): Float {

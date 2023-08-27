@@ -50,8 +50,9 @@ class Status private constructor(private val osc: OSCController) {
         return osc.getFaderFromIndex((value.arguments[0] as Int + 1).toString())
     }
 
-    fun setChannelFaderBank(bank: ChannelFaderBank) {
-        osc.sendMessage(OSCMessage("/-stat/chfaderbank", listOf(bank.value)))
+    fun setChannelFaderBank(bank: ChannelFaderBank, force: Boolean = false) {
+        if (force) osc.forceSend(OSCMessage("/-stat/chfaderbank", listOf(bank.value, 1)))
+        else osc.sendMessage(OSCMessage("/-stat/chfaderbank", listOf(bank.value)))
     }
 
     suspend fun getChannelFaderBank(): ChannelFaderBank {
@@ -60,8 +61,9 @@ class Status private constructor(private val osc: OSCController) {
         return ChannelFaderBank.entries[value.arguments[0] as Int]
     }
 
-    fun setGroupFaderBank(bank: GroupFaderBank) {
-        osc.sendMessage(OSCMessage("/-stat/grpfaderbank", listOf(bank.value)))
+    fun setGroupFaderBank(bank: GroupFaderBank, force: Boolean = false) {
+        if (force) osc.forceSend(OSCMessage("/-stat/grpfaderbank", listOf(bank.value, 1)))
+        else osc.sendMessage(OSCMessage("/-stat/grpfaderbank", listOf(bank.value)))
     }
 
     suspend fun getGroupFaderBank(): GroupFaderBank {
