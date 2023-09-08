@@ -1,6 +1,6 @@
 package dev.tiebe.avt.x32.commands
 
-import dev.tiebe.avt.x32.OSCController
+import dev.tiebe.avt.x32.X32OSC
 import dev.tiebe.avt.x32.api.fader.*
 import dev.tiebe.avt.x32.api.fader.Color
 import dev.tiebe.avt.x32.api.fader.Eq.Companion.getFilterType
@@ -18,7 +18,7 @@ import kotlin.math.log10
 import kotlin.math.pow
 import kotlin.math.round
 
-class EQFaderSync(val osc: OSCController): Command {
+class EQFaderSync(val osc: X32OSC): Command {
     override var arguments: List<Any> = listOf()
 
     companion object {

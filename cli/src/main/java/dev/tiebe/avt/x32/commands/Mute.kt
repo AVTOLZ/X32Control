@@ -1,10 +1,10 @@
 package dev.tiebe.avt.x32.commands
 
-import dev.tiebe.avt.x32.OSCController
+import dev.tiebe.avt.x32.X32OSC
 import dev.tiebe.avt.x32.api.getChannel
 import kotlinx.coroutines.runBlocking
 
-class Mute(private val osc: OSCController): Command {
+class Mute(private val osc: X32OSC): Command {
 
     override var arguments: List<Any> = listOf()
     override fun setArguments(args: List<String>): Mute? {

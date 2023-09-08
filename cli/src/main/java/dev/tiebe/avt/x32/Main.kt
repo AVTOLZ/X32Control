@@ -6,7 +6,7 @@ import dev.tiebe.avt.x32.commands.*
 import kotlinx.coroutines.runBlocking
 
 // User variables
-const val IP = "192.168.122.209"
+const val IP = "192.168.0.20"
 const val TESTING_SERVER = true
 
 fun main(args: Array<String>) {
@@ -16,7 +16,7 @@ fun main(args: Array<String>) {
         localPort = args[0].toInt()
     }
 
-    val osc = OSCController(IP, 10023, localPort)
+    val osc = X32OSC(IP, 10023, localPort)
     osc.connect()
 
     if (TESTING_SERVER) Thread {

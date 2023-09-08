@@ -3,7 +3,7 @@ plugins {
     id("org.jetbrains.kotlinx.kover") version "0.7.3"
 }
 
-group = "dev.tiebe.avt.x32"
+group = "dev.tiebe.avt"
 version = "1.0-SNAPSHOT"
 
 repositories {
@@ -12,8 +12,8 @@ repositories {
 }
 
 dependencies {
-    implementation(project(":main"))
 
+    implementation(project(":x32"))
     testImplementation(platform("org.junit:junit-bom:5.9.1"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     implementation(kotlin("stdlib-jdk8"))

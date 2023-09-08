@@ -1,17 +1,15 @@
 package dev.tiebe.avt.x32.commands
 
-import com.illposed.osc.OSCBundle
-import com.illposed.osc.OSCMessage
-import dev.tiebe.avt.x32.OSCController
+import dev.tiebe.avt.x32.X32OSC
 import dev.tiebe.avt.x32.api.getChannel
 import dev.tiebe.avt.x32.api.getDCA
 import dev.tiebe.avt.x32.api.getLR
 import kotlin.math.pow
 import kotlin.math.sin
 
-class Animation(private val osc: OSCController): Command {
+class Animation(private val osc: X32OSC): Command {
     override var arguments: List<Any> = listOf()
-    val channels = List(16) { osc.getChannel(it + 1) } + List(8) { osc.getDCA(it + 1) } + osc.getLR()
+    private val channels = List(16) { osc.getChannel(it + 1) } + List(8) { osc.getDCA(it + 1) } + osc.getLR()
 
     override fun setArguments(args: List<String>): Command? {
         if(args.size < 2) {
@@ -44,13 +42,9 @@ class Animation(private val osc: OSCController): Command {
         var t = 0.0
         while (true) {
             t += 0.05
-            //TODO: test if X32 support this
-            val packets = mutableListOf<OSCMessage>()
             channels.forEachIndexed { index, channel ->
-                packets.add(OSCMessage(channel.mix.levelOSCCommand, listOf((0.5 * sin(t + 0.3 * index) + 0.5).toFloat())))
+                channel.mix.setLevel((0.5 * sin(t + 0.3 * index) + 0.5).toFloat())
             }
-
-            osc.sendBundle(OSCBundle(packets.toList()))
             Thread.sleep(20)
         }
     }
@@ -64,7 +58,7 @@ class Animation(private val osc: OSCController): Command {
                 channel.mix.setLevel(level)
             }
             counter++
-            Thread.sleep(250)
+            Thread.sleep(200)
         }
     }
 

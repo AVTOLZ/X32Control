@@ -21,7 +21,7 @@ plugins {
 }
 
 dependencies {
-    kover(project(":main"))
+    "kover"(project(":x32"))
     kover(project(":cli"))
 }
 

@@ -1,11 +1,11 @@
 package dev.tiebe.avt.x32.commands
 
-import dev.tiebe.avt.x32.OSCController
+import dev.tiebe.avt.x32.X32OSC
 import dev.tiebe.avt.x32.api.*
 import kotlinx.coroutines.runBlocking
 import java.util.UUID
 
-class BlockLock(private val osc: OSCController): Command {
+class BlockLock(private val osc: X32OSC): Command {
     companion object {
         var subscription: UUID? = null
     }

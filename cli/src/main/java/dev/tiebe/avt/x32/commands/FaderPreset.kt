@@ -1,11 +1,10 @@
 package dev.tiebe.avt.x32.commands
 
-import dev.tiebe.avt.x32.OSCController
-import dev.tiebe.avt.x32.api.getChannel
+import dev.tiebe.avt.x32.X32OSC
 import dev.tiebe.avt.x32.api.getFaderFromIndex
 import kotlin.math.sin
 
-class FaderPreset(private val osc: OSCController): Command {
+class FaderPreset(private val osc: X32OSC): Command {
     override var arguments: List<Any> = listOf()
     private val off = List(80) { 0.0f }
     private val line = List(80) { it / 80f }
@@ -33,7 +32,7 @@ class FaderPreset(private val osc: OSCController): Command {
 
     override fun run() {
         arguments.forEachIndexed { channel, level ->
-            osc.getFaderFromIndex(channel + 1).mix.setLevel(level as Float)
+            osc.getFaderFromIndex(channel + 1)?.mix?.setLevel(level as Float)
             Thread.sleep(50)
         }
     }

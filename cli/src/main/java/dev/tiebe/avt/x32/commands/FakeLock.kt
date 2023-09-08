@@ -1,12 +1,12 @@
 package dev.tiebe.avt.x32.commands
 
-import dev.tiebe.avt.x32.OSCController
+import dev.tiebe.avt.x32.X32OSC
 import dev.tiebe.avt.x32.api.*
 import dev.tiebe.avt.x32.api.fader.Color
 import dev.tiebe.avt.x32.api.internal.Screen
 import kotlinx.coroutines.runBlocking
 
-class FakeLock(private val osc: OSCController): Command {
+class FakeLock(private val osc: X32OSC): Command {
     companion object {
         @Volatile var animationThreadRunning = false
         @Volatile var speed = 1.0
