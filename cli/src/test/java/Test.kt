@@ -1,4 +1,4 @@
-package dev.tiebe.avt.x32
+package dev.tiebe.avt.osc
 
 class Test {
     @Test
